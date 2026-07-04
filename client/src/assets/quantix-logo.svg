@@ -1,0 +1,101 @@
+<svg width="620" height="160" viewBox="0 0 620 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="qxStroke" x1="20" y1="20" x2="140" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5DB7FF"/>
+      <stop offset="0.55" stop-color="#2E7BFF"/>
+      <stop offset="1" stop-color="#0A1633"/>
+    </linearGradient>
+
+    <linearGradient id="qxText" x1="170" y1="20" x2="500" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3F8FF"/>
+      <stop offset="0.45" stop-color="#C9D9FF"/>
+      <stop offset="1" stop-color="#6E91D8"/>
+    </linearGradient>
+
+    <filter id="qxGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- icon shell -->
+  <g transform="translate(10,10)">
+    <rect x="0" y="0" width="140" height="140" rx="38" fill="#060C18"/>
+    <rect x="2.5" y="2.5" width="135" height="135" rx="35.5" stroke="rgba(130,180,255,0.18)" stroke-width="5"/>
+
+    <!-- outer Q ring -->
+    <path
+      d="M70 24
+         C95 24 116 44 116 70
+         C116 96 95 116 70 116
+         C45 116 24 96 24 70
+         C24 44 45 24 70 24Z"
+      stroke="url(#qxStroke)"
+      stroke-width="13"
+      fill="none"
+      filter="url(#qxGlow)"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- inner Q cut / signal slash -->
+    <path
+      d="M83 86L109 112"
+      stroke="url(#qxStroke)"
+      stroke-width="12"
+      stroke-linecap="round"
+      filter="url(#qxGlow)"
+    />
+
+    <!-- C spine / tech slice -->
+    <path
+      d="M84 45
+         C79 40 72 37 64 37
+         C46 37 33 51 33 70
+         C33 89 46 103 64 103
+         C72 103 79 100 84 95"
+      stroke="#9BD0FF"
+      stroke-width="9"
+      stroke-linecap="round"
+      fill="none"
+      opacity="0.95"
+    />
+
+    <!-- top signal node -->
+    <circle cx="100" cy="41" r="5.5" fill="#74B8FF"/>
+  </g>
+
+  <!-- text -->
+  <g>
+    <text x="182" y="78"
+      font-family="Inter, Poppins, Arial, sans-serif"
+      font-size="44"
+      font-weight="800"
+      fill="url(#qxText)"
+      letter-spacing="0.5">
+      Quantix
+    </text>
+
+    <text x="182" y="122"
+      font-family="Inter, Poppins, Arial, sans-serif"
+      font-size="34"
+      font-weight="650"
+      fill="#DCE8FF"
+      opacity="0.95"
+      letter-spacing="0.3">
+      Connect
+    </text>
+
+    <text x="183" y="146"
+      font-family="Inter, Poppins, Arial, sans-serif"
+      font-size="12"
+      font-weight="600"
+      fill="#6D87B8"
+      letter-spacing="2.2">
+      POWERED BY EXPECTATIONS × DARK HEART
+    </text>
+  </g>
+</svg>

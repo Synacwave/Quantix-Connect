@@ -1,0 +1,199 @@
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(26, 63, 138, 0.18), transparent 30%),
+    radial-gradient(circle at bottom, rgba(13, 24, 56, 0.4), transparent 40%),
+    linear-gradient(135deg, #02050b 0%, #040914 45%, #020307 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s ease, transform 0.8s ease, filter 0.8s ease;
+}
+
+.intro-screen.fade-out {
+  opacity: 0;
+  transform: scale(1.02);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.intro-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  animation: floatOrb 8s ease-in-out infinite alternate;
+}
+
+.orb-1 {
+  width: 260px;
+  height: 260px;
+  background: rgba(0, 119, 255, 0.28);
+  top: 12%;
+  left: 8%;
+}
+
+.orb-2 {
+  width: 340px;
+  height: 340px;
+  background: rgba(24, 87, 255, 0.2);
+  right: 8%;
+  bottom: 10%;
+  animation-duration: 10s;
+}
+
+.orb-3 {
+  width: 180px;
+  height: 180px;
+  background: rgba(67, 139, 255, 0.18);
+  top: 55%;
+  left: 42%;
+  animation-duration: 7s;
+}
+
+.intro-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 2rem;
+  animation: riseIn 1.2s ease forwards;
+}
+
+.intro-logo-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.6rem 2rem;
+}
+
+.intro-logo-ring {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  border: 1px solid rgba(120, 170, 255, 0.16);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 0 30px rgba(0, 102, 255, 0.18),
+    inset 0 0 25px rgba(255, 255, 255, 0.03);
+  animation: pulseGlass 2.6s ease-in-out infinite;
+}
+
+.intro-title {
+  position: relative;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  color: #eef4ff;
+  text-shadow:
+    0 0 18px rgba(96, 162, 255, 0.35),
+    0 0 45px rgba(20, 90, 255, 0.18);
+  animation: blurReveal 1.4s ease forwards;
+}
+
+.intro-line {
+  width: min(380px, 75vw);
+  height: 2px;
+  margin: 1.2rem auto 1rem;
+  background: linear-gradient(90deg, transparent, #4ea1ff, #9cc8ff, transparent);
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: lineGrow 1.2s ease 0.8s forwards;
+  box-shadow: 0 0 18px rgba(78, 161, 255, 0.4);
+}
+
+.intro-subtitle {
+  margin: 0;
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  letter-spacing: 0.12em;
+  color: rgba(220, 231, 255, 0.82);
+  opacity: 0;
+  animation: fadeUp 1s ease 1.4s forwards;
+}
+
+.intro-subtitle span {
+  color: #8bc2ff;
+  font-weight: 600;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes blurReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes lineGrow {
+  from {
+    transform: scaleX(0);
+    opacity: 0.3;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlass {
+  0% {
+    transform: scale(0.985);
+    box-shadow:
+      0 0 20px rgba(0, 102, 255, 0.12),
+      inset 0 0 18px rgba(255, 255, 255, 0.02);
+  }
+  100% {
+    transform: scale(1.015);
+    box-shadow:
+      0 0 35px rgba(0, 102, 255, 0.2),
+      inset 0 0 24px rgba(255, 255, 255, 0.04);
+  }
+}
+
+@keyframes floatOrb {
+  from {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  to {
+    transform: translateY(-25px) translateX(20px) scale(1.08);
+  }
+}

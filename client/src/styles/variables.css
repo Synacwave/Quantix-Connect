@@ -1,0 +1,23 @@
+:root {
+  --bg-main: #02050b;
+  --bg-soft: #07101f;
+  --bg-card: rgba(10, 18, 35, 0.62);
+  --bg-card-2: rgba(18, 30, 56, 0.45);
+
+  --border-soft: rgba(140, 182, 255, 0.12);
+  --border-strong: rgba(122, 171, 255, 0.22);
+
+  --text-main: #eef4ff;
+  --text-soft: #b8c6e6;
+  --text-dim: #7d8eae;
+
+  --blue-1: #4ea1ff;
+  --blue-2: #2563ff;
+  --blue-3: #8bc2ff;
+
+  --shadow-blue: 0 0 35px rgba(37, 99, 255, 0.18);
+  --glass-blur: blur(16px);
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+}

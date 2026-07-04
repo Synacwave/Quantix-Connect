@@ -1,0 +1,47 @@
+export const mockChats = [
+  {
+    id: "1",
+    type: "dm",
+    name: "Zino",
+    username: "zino.exe",
+    lastMessage: "Guy this UI dey hard 😭🔥",
+    time: "2m",
+    unread: 3,
+    online: true,
+    avatar: "Z",
+    messages: [
+      { id: "m1", sender: "them", text: "You don build am finish?", time: "12:02 AM" },
+      { id: "m2", sender: "me", text: "Still cooking the realtime side 😭", time: "12:03 AM" },
+      { id: "m3", sender: "them", text: "Guy this UI dey hard 😭🔥", time: "12:04 AM" },
+    ],
+  },
+  {
+    id: "2",
+    type: "group",
+    name: "Extinction HQ",
+    username: "12 members",
+    lastMessage: "Dark Heart: Push am to Render abeg",
+    time: "8m",
+    unread: 0,
+    online: false,
+    avatar: "E",
+    messages: [
+      { id: "m4", sender: "them", text: "Dark Heart: Push am to Render abeg", time: "11:51 PM" },
+      { id: "m5", sender: "me", text: "I dey on am", time: "11:52 PM" },
+    ],
+  },
+  {
+    id: "3",
+    type: "dm",
+    name: "Mira",
+    username: "mirage",
+    lastMessage: "Send me the build link when done.",
+    time: "23m",
+    unread: 1,
+    online: false,
+    avatar: "M",
+    messages: [
+      { id: "m6", sender: "them", text: "Send me the build link when done.", time: "11:34 PM" },
+    ],
+  },
+];

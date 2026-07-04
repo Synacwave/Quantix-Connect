@@ -1,0 +1,59 @@
+<svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="markStroke" x1="18" y1="18" x2="132" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6BC2FF"/>
+      <stop offset="0.5" stop-color="#2E7BFF"/>
+      <stop offset="1" stop-color="#0A1633"/>
+    </linearGradient>
+
+    <filter id="markGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="8" y="8" width="144" height="144" rx="40" fill="#050B17"/>
+  <rect x="10.5" y="10.5" width="139" height="139" rx="37.5" stroke="#17345F" stroke-opacity="0.55" stroke-width="5"/>
+
+  <!-- Q ring -->
+  <path
+    d="M80 30
+       C108 30 130 52 130 80
+       C130 108 108 130 80 130
+       C52 130 30 108 30 80
+       C30 52 52 30 80 30Z"
+    stroke="url(#markStroke)"
+    stroke-width="13"
+    fill="none"
+    filter="url(#markGlow)"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Q tail -->
+  <path
+    d="M95 96L122 123"
+    stroke="url(#markStroke)"
+    stroke-width="12"
+    stroke-linecap="round"
+    filter="url(#markGlow)"
+  />
+
+  <!-- C / tech cut -->
+  <path
+    d="M95 50
+       C88 43 79 39 69 39
+       C49 39 35 55 35 80
+       C35 105 49 121 69 121
+       C79 121 88 117 95 110"
+    stroke="#A8D8FF"
+    stroke-width="9"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <circle cx="112" cy="48" r="5.5" fill="#7BC3FF"/>
+</svg>
