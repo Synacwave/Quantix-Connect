@@ -1,4 +1,3 @@
-
 name: Unzip Quantix Project
 
 on:
@@ -21,11 +20,26 @@ jobs:
       - name: Unzip QuantixConnect.zip
         run: unzip -o QuantixConnect.zip -d extracted
 
+      - name: Show extracted structure
+        run: find extracted -maxdepth 3 -type f -o -type d
+
       - name: Move project files into repo root
         run: |
-          cp -r extracted/quantix-connect/* .
-          cp extracted/quantix-connect/.gitignore . 2>/dev/null || true
-          cp extracted/quantix-connect/README.md . 2>/dev/null || true
+          if [ -d "extracted/quantix-connect" ]; then
+            SRC="extracted/quantix-connect"
+          elif [ -d "extracted/QuantixConnect" ]; then
+            SRC="extracted/QuantixConnect"
+          elif [ -d "extracted/Quantix Connect" ]; then
+            SRC="extracted/Quantix Connect"
+          else
+            SRC="extracted"
+          fi
+
+          echo "Using source folder: $SRC"
+
+          cp -r "$SRC"/* .
+          cp "$SRC"/.gitignore . 2>/dev/null || true
+          cp "$SRC"/README.md . 2>/dev/null || true
 
       - name: Remove extracted temp folder
         run: rm -rf extracted
