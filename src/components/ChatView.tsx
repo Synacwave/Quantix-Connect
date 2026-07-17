@@ -4,7 +4,7 @@ import {
   Paperclip, Send, Smile, Mic, Trash2, Check, CheckCheck, 
   ArrowLeft, Download, Image as ImageIcon, Volume2, 
   Play, Pause, Pin, Info, File, AlertCircle, X, StopCircle,
-  MessageSquare
+  MessageSquare, Users, Crown, LogOut
 } from "lucide-react";
 import { User, Chat, Message } from "../types";
 
@@ -37,6 +37,7 @@ export default function ChatView({
   const [showEmojis, setShowEmojis] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -284,294 +285,472 @@ export default function ChatView({
   };
 
   return (
-    <div className="flex-1 h-full bg-slate-950 flex flex-col relative select-none">
-      {/* Interactive Chat Header */}
-      <div className="px-4 py-3 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Back mobile button */}
-          <button 
-            onClick={onBack}
-            className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+    <div className="flex-1 h-full bg-slate-950 flex flex-row relative select-none overflow-hidden">
+      <div className="flex-1 h-full flex flex-col relative">
+        {/* Interactive Chat Header */}
+        <div className="px-4 py-3 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Back mobile button */}
+            <button 
+              onClick={onBack}
+              className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
 
-          {partner && (
-            <>
-              <div className="relative shrink-0">
-                {partner.avatarUrl ? (
-                  <img src={partner.avatarUrl} alt={partner.displayName} className="w-10 h-10 rounded-full object-cover border border-blue-500/15" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-sm font-bold">
-                    {partner.displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                {partner.status === "online" && (
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
-                )}
-              </div>
-              <div className="min-w-0 leading-tight">
-                <div className="text-xs font-extrabold text-white truncate">{partner.displayName}</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium">
-                  {partner.status === "online" ? (
-                    <span className="text-emerald-500 font-bold">online</span>
+            {activeChat.isGroup ? (
+              <>
+                <div className="relative shrink-0">
+                  {activeChat.avatarUrl ? (
+                    <img src={activeChat.avatarUrl} alt={activeChat.name} className="w-10 h-10 rounded-xl object-cover border border-blue-500/15" />
                   ) : (
-                    <span>offline</span>
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-950 to-blue-950 border border-blue-500/15 flex items-center justify-center text-blue-400 text-sm font-bold shadow-inner">
+                      <Users className="w-5 h-5 text-blue-400" />
+                    </div>
                   )}
                 </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Header Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => onTogglePin(activeChat.id)}
-            className={`p-2 rounded-xl transition cursor-pointer ${activeChat.isPinned ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-500 hover:bg-slate-900 hover:text-slate-300"}`}
-            title={activeChat.isPinned ? "Unpin Chat" : "Pin Chat"}
-          >
-            <Pin className={`w-4 h-4 ${activeChat.isPinned ? "rotate-45" : ""}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Messages Logs Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-radial from-slate-950 via-slate-950 to-black scrollbar-thin scrollbar-thumb-slate-800">
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl p-3 max-w-sm mx-auto flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-10 opacity-30 select-none">
-            <MessageSquare className="w-14 h-14 text-blue-500 mb-3 animate-bounce" />
-            <span className="text-xs font-bold text-white uppercase tracking-wider">No Messages Here Yet</span>
-            <span className="text-[10px] text-slate-500 mt-1 max-w-xs">Be the first to say hi! Attach files, voice notes, or emojis using the controls below.</span>
-          </div>
-        ) : (
-          messages.map((msg) => {
-            const isSelf = msg.senderId === currentUser.id;
-            const isRead = msg.readBy.length > 1; // Read by sender and receiver
-
-            return (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.2 }}
-                className={`flex w-full group ${isSelf ? "justify-end" : "justify-start"}`}
-              >
-                <div className={`relative max-w-[70%] rounded-2xl px-3.5 py-2.5 shadow-lg border relative flex flex-col gap-1 transition ${
-                  isSelf 
-                    ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
-                    : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
-                }`}>
-                  {/* Delete Hover Control */}
-                  {isSelf && (
-                    <button
-                      onClick={() => onDeleteMessage(msg.id)}
-                      className="absolute -left-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-slate-900/80 hover:bg-red-950 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition duration-150 cursor-pointer border border-slate-800"
-                      title="Delete message"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-
-                  {/* Attachment Types Rendering */}
-                  {msg.mediaType === "image" && msg.mediaUrl && (
-                    <div className="rounded-xl overflow-hidden mb-1 border border-slate-950 bg-slate-950 shadow-inner max-w-xs">
-                      <img src={msg.mediaUrl} alt="Shared Photo" className="max-w-full max-h-60 object-contain hover:scale-102 transition duration-200 cursor-pointer" />
+                <div className="min-w-0 leading-tight">
+                  <div className="text-xs font-extrabold text-white truncate">{activeChat.name || "Secure Group"}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium">
+                    <span>{activeChat.participants?.length || 0} participants</span>
+                  </div>
+                </div>
+              </>
+            ) : partner ? (
+              <>
+                <div className="relative shrink-0">
+                  {partner.avatarUrl ? (
+                    <img src={partner.avatarUrl} alt={partner.displayName} className="w-10 h-10 rounded-full object-cover border border-blue-500/15" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-sm font-bold">
+                      {partner.displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
-
-                  {msg.mediaType === "voice" && msg.mediaUrl && (
-                    <div className="mb-1">
-                      <VoicePlayer url={msg.mediaUrl} />
-                    </div>
+                  {partner.status === "online" && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
                   )}
-
-                  {msg.mediaType === "file" && msg.mediaUrl && (
-                    <a 
-                      href={msg.mediaUrl} 
-                      download={msg.text}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 bg-slate-950/50 hover:bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl text-left transition mb-1 max-w-xs cursor-pointer group"
-                    >
-                      <File className="w-6 h-6 text-blue-500 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-bold text-white block truncate group-hover:text-blue-400">{msg.text}</span>
-                        <span className="text-[9px] text-slate-500 block mt-0.5">Click to download file</span>
-                      </div>
-                      <Download className="w-4 h-4 text-slate-500 shrink-0" />
-                    </a>
-                  )}
-
-                  {/* Text (Only if text exists or is standard message) */}
-                  {msg.mediaType === "text" && (
-                    <p className="text-[12px] font-normal leading-relaxed break-words">{msg.text}</p>
-                  )}
-
-                  {/* Metadata line (Timestamp + Receipts) */}
-                  <div className="flex items-center justify-end gap-1 text-[9px] text-slate-500 mt-0.5 self-end shrink-0 select-none">
-                    <span>{formatMessageTime(msg.createdAt)}</span>
-                    {isSelf && (
-                      <span className="ml-1 shrink-0">
-                        {isRead ? (
-                          <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
-                        ) : (
-                          <Check className="w-3.5 h-3.5 text-slate-600" />
-                        )}
-                      </span>
+                </div>
+                <div className="min-w-0 leading-tight">
+                  <div className="text-xs font-extrabold text-white truncate">{partner.displayName}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium">
+                    {partner.status === "online" ? (
+                      <span className="text-emerald-500 font-bold">online</span>
+                    ) : (
+                      <span>offline</span>
                     )}
                   </div>
                 </div>
-              </motion.div>
-            );
-          })
-        )}
+              </>
+            ) : null}
+          </div>
 
-        {/* Live Typing indicator bubble */}
-        {partner && typingUsers[partner.id] && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="flex justify-start"
-          >
-            <div className="bg-slate-900/60 border border-slate-900/50 rounded-2xl px-4 py-2.5 text-slate-500 text-[10px] flex items-center gap-1.5 font-medium shadow-sm">
-              <span className="font-bold text-slate-400">{partner.displayName}</span>
-              <span>is typing</span>
-              <span className="flex gap-0.5 ml-0.5 mt-1 shrink-0">
-                <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
-                <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-              </span>
-            </div>
-          </motion.div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Action Panel Bar */}
-      <div className="p-3 bg-slate-950 border-t border-blue-500/10 flex flex-col gap-2 relative shrink-0">
-        
-        {/* Emoji Grid Overlay Panel */}
-        <AnimatePresence>
-          {showEmojis && (
-            <motion.div
-              initial={{ opacity: 0, y: 15, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.98 }}
-              className="absolute bottom-16 left-3 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-30 max-w-xs grid grid-cols-6 gap-1"
+          {/* Header Actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => onTogglePin(activeChat.id)}
+              className={`p-2 rounded-xl transition cursor-pointer ${activeChat.isPinned ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-500 hover:bg-slate-900 hover:text-slate-300"}`}
+              title={activeChat.isPinned ? "Unpin Chat" : "Pin Chat"}
             >
-              {EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => insertEmoji(emoji)}
-                  className="w-10 h-10 hover:bg-slate-900 text-lg rounded-xl flex items-center justify-center transition active:scale-90 cursor-pointer"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </motion.div>
+              <Pin className={`w-4 h-4 ${activeChat.isPinned ? "rotate-45" : ""}`} />
+            </button>
+            {activeChat.isGroup && (
+              <button
+                onClick={() => setShowGroupInfo(!showGroupInfo)}
+                className={`p-2 rounded-xl transition cursor-pointer ${showGroupInfo ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-500 hover:bg-slate-900 hover:text-slate-300"}`}
+                title="Group Protocol Details"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Messages Logs Area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-radial from-slate-950 via-slate-950 to-black scrollbar-thin scrollbar-thumb-slate-800">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl p-3 max-w-sm mx-auto flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
           )}
-        </AnimatePresence>
 
-        {/* Main Action Line */}
-        <div className="flex items-center gap-2">
-          
-          {/* File/Attachment Clip Button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="p-2.5 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-blue-400 transition shrink-0 cursor-pointer"
-            title="Attach file"
-          >
-            <Paperclip className="w-4.5 h-4.5" />
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            className="hidden" 
-          />
-
-          {/* Emoji Toggle button */}
-          <button
-            onClick={() => setShowEmojis(!showEmojis)}
-            className={`p-2.5 rounded-xl transition shrink-0 cursor-pointer ${showEmojis ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
-            title="Insert emoji"
-          >
-            <Smile className="w-4.5 h-4.5" />
-          </button>
-
-          {/* Input text / Recording state switcher */}
-          {isRecording ? (
-            // RECORDING PULSING STATE PANEL
-            <div className="flex-1 bg-slate-900 border border-red-500/20 rounded-xl px-4 py-2 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping shrink-0"></span>
-                <span className="text-red-400 font-bold shrink-0">Recording Voice</span>
-                <span className="text-slate-500 font-mono font-medium ml-1 shrink-0">{formatRecordTime(recordingTime)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={cancelRecording}
-                  className="px-3 py-1 bg-slate-800 text-slate-400 rounded-lg hover:text-white hover:bg-slate-700 transition cursor-pointer text-[10px] font-bold uppercase tracking-wider"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={stopRecording}
-                  className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition cursor-pointer text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
-                >
-                  <StopCircle className="w-3.5 h-3.5" />
-                  <span>Send</span>
-                </button>
-              </div>
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center py-10 opacity-30 select-none">
+              <MessageSquare className="w-14 h-14 text-blue-500 mb-3 animate-bounce" />
+              <span className="text-xs font-bold text-white uppercase tracking-wider">No Messages Here Yet</span>
+              <span className="text-[10px] text-slate-500 mt-1 max-w-xs">Be the first to say hi! Attach files, voice notes, or emojis using the controls below.</span>
             </div>
           ) : (
-            // REGULAR INPUT FORM
-            <form onSubmit={handleSendText} className="flex-1 flex gap-2">
-              <input
-                type="text"
-                value={inputText}
-                onChange={handleInputChange}
-                placeholder={uploading ? "Uploading media..." : "Write a message..."}
-                disabled={uploading}
-                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all"
-              />
+            messages.map((msg) => {
+              const isSystem = msg.senderId === "000000000000000000000000";
+              if (isSystem) {
+                return (
+                  <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
+                    <div className="bg-slate-900/60 border border-blue-500/10 px-4 py-1.5 rounded-full text-[10px] font-mono text-blue-400 max-w-[85%] text-center uppercase tracking-wider leading-relaxed shadow-sm">
+                      {msg.text}
+                    </div>
+                  </div>
+                );
+              }
 
-              {inputText.trim() ? (
-                // SEND TEXT BUTTON
-                <button
-                  type="submit"
-                  className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer"
-                  title="Send message"
+              const isSelf = msg.senderId === currentUser.id;
+              const isRead = msg.readBy.length > 1; // Read by sender and receiver
+
+              return (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className={`flex w-full group ${isSelf ? "justify-end" : "justify-start"}`}
                 >
-                  <Send className="w-4 h-4 fill-white" />
-                </button>
-              ) : (
-                // VOICE RECORD MIC BUTTON
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  disabled={uploading}
-                  className="p-2.5 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-red-400 transition shrink-0 cursor-pointer"
-                  title="Record voice message"
-                >
-                  <Mic className="w-4.5 h-4.5" />
-                </button>
-              )}
-            </form>
+                  <div className={`relative max-w-[70%] rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition ${
+                    isSelf 
+                      ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
+                      : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
+                  }`}>
+                    {/* Delete Hover Control */}
+                    {isSelf && (
+                      <button
+                        onClick={() => onDeleteMessage(msg.id)}
+                        className="absolute -left-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-slate-900/80 hover:bg-red-950 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition duration-150 cursor-pointer border border-slate-800"
+                        title="Delete message"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Sender Name in Group Chat */}
+                    {activeChat.isGroup && !isSelf && (() => {
+                      const sender = activeChat.participants?.find(p => p.id === msg.senderId);
+                      return (
+                        <span className="text-[10px] font-extrabold text-blue-400 mb-0.5 block">
+                          {sender ? sender.displayName : `User @${msg.senderId.slice(-4)}`}
+                        </span>
+                      );
+                    })()}
+
+                    {/* Attachment Types Rendering */}
+                    {msg.mediaType === "image" && msg.mediaUrl && (
+                      <div className="rounded-xl overflow-hidden mb-1 border border-slate-950 bg-slate-950 shadow-inner max-w-xs">
+                        <img src={msg.mediaUrl} alt="Shared Photo" className="max-w-full max-h-60 object-contain hover:scale-102 transition duration-200 cursor-pointer" referrerPolicy="no-referrer" />
+                      </div>
+                    )}
+
+                    {msg.mediaType === "voice" && msg.mediaUrl && (
+                      <div className="mb-1">
+                        <VoicePlayer url={msg.mediaUrl} />
+                      </div>
+                    )}
+
+                    {msg.mediaType === "file" && msg.mediaUrl && (
+                      <a 
+                        href={msg.mediaUrl} 
+                        download={msg.text}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 bg-slate-950/50 hover:bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl text-left transition mb-1 max-w-xs cursor-pointer group"
+                      >
+                        <File className="w-6 h-6 text-blue-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] font-bold text-white block truncate group-hover:text-blue-400">{msg.text}</span>
+                          <span className="text-[9px] text-slate-500 block mt-0.5">Click to download file</span>
+                        </div>
+                        <Download className="w-4 h-4 text-slate-500 shrink-0" />
+                      </a>
+                    )}
+
+                    {/* Text (Only if text exists or is standard message) */}
+                    {msg.mediaType === "text" && (
+                      <p className="text-[12px] font-normal leading-relaxed break-words">{msg.text}</p>
+                    )}
+
+                    {/* Metadata line (Timestamp + Receipts) */}
+                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-500 mt-0.5 self-end shrink-0 select-none">
+                      <span>{formatMessageTime(msg.createdAt)}</span>
+                      {isSelf && (
+                        <span className="ml-1 shrink-0">
+                          {isRead ? (
+                            <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5 text-slate-600" />
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
           )}
 
+          {/* Live Typing indicator bubble */}
+          {!activeChat.isGroup && partner && typingUsers[partner.id] && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="bg-slate-900/60 border border-slate-900/50 rounded-2xl px-4 py-2.5 text-slate-500 text-[10px] flex items-center gap-1.5 font-medium shadow-sm">
+                <span className="font-bold text-slate-400">{partner.displayName}</span>
+                <span>is typing</span>
+                <span className="flex gap-0.5 ml-0.5 mt-1 shrink-0">
+                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
+                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Action Panel Bar */}
+        <div className="p-3 bg-slate-950 border-t border-blue-500/10 flex flex-col gap-2 relative shrink-0">
+          
+          {/* Emoji Grid Overlay Panel */}
+          <AnimatePresence>
+            {showEmojis && (
+              <motion.div
+                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 15, scale: 0.98 }}
+                className="absolute bottom-16 left-3 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-30 max-w-xs grid grid-cols-6 gap-1"
+              >
+                {EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => insertEmoji(emoji)}
+                    className="w-10 h-10 hover:bg-slate-900 text-lg rounded-xl flex items-center justify-center transition active:scale-90 cursor-pointer"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Action Line */}
+          <div className="flex items-center gap-2">
+            
+            {/* File/Attachment Clip Button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="p-2.5 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-blue-400 transition shrink-0 cursor-pointer"
+              title="Attach file"
+            >
+              <Paperclip className="w-4.5 h-4.5" />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              className="hidden" 
+            />
+
+            {/* Emoji Toggle button */}
+            <button
+              onClick={() => setShowEmojis(!showEmojis)}
+              className={`p-2.5 rounded-xl transition shrink-0 cursor-pointer ${showEmojis ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
+              title="Insert emoji"
+            >
+              <Smile className="w-4.5 h-4.5" />
+            </button>
+
+            {/* Input text / Recording state switcher */}
+            {isRecording ? (
+              // RECORDING PULSING STATE PANEL
+              <div className="flex-1 bg-slate-900 border border-red-500/20 rounded-xl px-4 py-2 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping shrink-0"></span>
+                  <span className="text-red-400 font-bold shrink-0">Recording Voice</span>
+                  <span className="text-slate-500 font-mono font-medium ml-1 shrink-0">{formatRecordTime(recordingTime)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    onClick={cancelRecording}
+                    className="px-3 py-1 bg-slate-800 text-slate-400 rounded-lg hover:text-white hover:bg-slate-700 transition cursor-pointer text-[10px] font-bold uppercase tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={stopRecording}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition cursor-pointer text-[10px] font-bold uppercase tracking-wider flex items-center gap-1"
+                  >
+                    <StopCircle className="w-3.5 h-3.5" />
+                    <span>Send</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // REGULAR INPUT FORM
+              <form onSubmit={handleSendText} className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={handleInputChange}
+                  placeholder={uploading ? "Uploading media..." : "Write a message..."}
+                  disabled={uploading}
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all"
+                />
+
+                {inputText.trim() ? (
+                  // SEND TEXT BUTTON
+                  <button
+                    type="submit"
+                    className="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer"
+                    title="Send message"
+                  >
+                    <Send className="w-4 h-4 fill-white" />
+                  </button>
+                ) : (
+                  // VOICE RECORD MIC BUTTON
+                  <button
+                    type="button"
+                    onClick={startRecording}
+                    disabled={uploading}
+                    className="p-2.5 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-red-400 transition shrink-0 cursor-pointer"
+                    title="Record voice message"
+                  >
+                    <Mic className="w-4.5 h-4.5" />
+                  </button>
+                )}
+              </form>
+            )}
+
+          </div>
         </div>
       </div>
+
+      {/* Group Info Right Sidebar */}
+      {showGroupInfo && activeChat.isGroup && (
+        <div className="w-80 border-l border-blue-500/10 bg-slate-950 flex flex-col h-full animate-fade-in shrink-0 relative z-20">
+          {/* Header */}
+          <div className="p-4 border-b border-blue-500/10 flex items-center justify-between bg-slate-900/20">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-500" />
+              <span className="font-extrabold text-xs text-white uppercase tracking-wider">Group Protocol Details</span>
+            </div>
+            <button 
+              onClick={() => setShowGroupInfo(false)}
+              className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-5 scrollbar-thin">
+            {/* Group Card */}
+            <div className="flex flex-col items-center text-center space-y-3 p-4 bg-slate-900/30 rounded-2xl border border-blue-500/5">
+              <div className="relative">
+                {activeChat.avatarUrl ? (
+                  <img src={activeChat.avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover border border-blue-500/20" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-950 to-blue-950 border border-blue-500/20 flex items-center justify-center shadow-lg">
+                    <Users className="w-8 h-8 text-blue-400 animate-pulse" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="text-sm font-extrabold text-white tracking-tight">{activeChat.name || "Secure Group"}</h4>
+                <p className="text-[10px] text-slate-500 font-mono mt-1">Chat ID: {activeChat.id.slice(-8).toUpperCase()}</p>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Channel Description</span>
+              <div className="bg-slate-900/20 border border-slate-800/40 p-3 rounded-xl text-xs text-slate-300 leading-relaxed">
+                {activeChat.description || "No description provided for this channel. Type /desc <text> to set one."}
+              </div>
+            </div>
+
+            {/* Participants List */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Participants ({activeChat.participants?.length || 0})</span>
+              </div>
+              
+              <div className="space-y-2 max-h-56 overflow-y-auto scrollbar-thin">
+                {activeChat.participants?.map(user => {
+                  const isAdmin = activeChat.admins?.includes(user.id);
+                  const isMe = user.id === currentUser.id;
+
+                  return (
+                    <div key={user.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-slate-900/50 hover:bg-slate-900/40 transition">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="relative shrink-0">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-400">
+                              {user.displayName.charAt(0)}
+                            </div>
+                          )}
+                          {user.status === "online" && (
+                            <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-slate-950 rounded-full"></span>
+                          )}
+                        </div>
+                        <div className="min-w-0 leading-none">
+                          <span className="text-[11px] font-bold text-white block truncate">
+                            {user.displayName} {isMe && <span className="text-[9px] text-slate-500 font-normal">(You)</span>}
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-mono">@{user.username}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isAdmin && (
+                          <Crown className="w-3 h-3 text-amber-500 animate-pulse" title="Group Administrator" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Admin Quick Guide & Help */}
+            <div className="space-y-1.5 p-3 rounded-xl border border-slate-800/80 bg-slate-900/10">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-blue-400 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Interactive Protocol Commands</span>
+              </span>
+              <div className="text-[10px] text-slate-400 space-y-1 leading-relaxed font-mono">
+                <p className="text-[9px] text-slate-500 border-b border-slate-800 pb-1 mb-1">Type in the message bar to trigger:</p>
+                <p><span className="text-blue-400">/name &lt;text&gt;</span> - Change group name</p>
+                <p><span className="text-blue-400">/desc &lt;text&gt;</span> - Change description</p>
+                <p><span className="text-blue-400">/pic &lt;url&gt;</span> - Set group avatar URL</p>
+                <p><span className="text-blue-400">/add @username</span> - Add participant</p>
+                <p><span className="text-blue-400">/kick @username</span> - Kick participant</p>
+                <p><span className="text-blue-400">/promote @username</span> - Make admin</p>
+                <p><span className="text-blue-400">/demote @username</span> - Demote admin</p>
+                <p><span className="text-blue-400">/leave</span> - Depart group chat</p>
+              </div>
+            </div>
+
+            {/* Leave Group Button */}
+            <button
+              onClick={() => {
+                if (confirm("Are you sure you want to leave this group chat?")) {
+                  onSendMessage("/leave");
+                  setShowGroupInfo(false);
+                }
+              }}
+              className="w-full py-2 bg-red-950/30 hover:bg-red-950/50 border border-red-500/20 text-red-400 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Depart Group Chat</span>
+            </button>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

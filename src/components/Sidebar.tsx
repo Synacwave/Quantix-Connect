@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Settings, Pin, MessageSquare, UserPlus, Circle, LogOut } from "lucide-react";
+import { Search, Settings, Pin, MessageSquare, UserPlus, Circle, LogOut, Users } from "lucide-react";
 import { User, Chat } from "../types";
 
 interface SidebarProps {
@@ -23,7 +23,17 @@ export default function Sidebar({
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [searching, setSearching] = useState(false);
 
-  // Trigger search on query change
+  // Group creation modal states
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupDesc, setGroupDesc] = useState("");
+  const [groupPic, setGroupPic] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [groupSearchQuery, setGroupSearchQuery] = useState("");
+  const [groupSearchResults, setGroupSearchResults] = useState<User[]>([]);
+  const [groupSearching, setGroupSearching] = useState(false);
+
+  // Trigger search on query change (main bar)
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -52,6 +62,35 @@ export default function Sidebar({
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
+  // Trigger search on query change (for group creation modal)
+  useEffect(() => {
+    if (!groupSearchQuery.trim()) {
+      setGroupSearchResults([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setGroupSearching(true);
+      try {
+        const response = await fetch(`/api/users/search?q=${encodeURIComponent(groupSearchQuery)}`, {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setGroupSearchResults(data);
+        }
+      } catch (err) {
+        console.error("Group search failed:", err);
+      } finally {
+        setGroupSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [groupSearchQuery]);
+
   // Separate pinned vs unpinned chats
   const sortedChats = [...chats].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
@@ -62,6 +101,41 @@ export default function Sidebar({
   const handleUserSearchResultClick = (user: User) => {
     onStartDirectChat(user);
     setSearchQuery("");
+  };
+
+  const handleEstablishGroup = async () => {
+    if (!groupName.trim() || selectedMemberIds.length === 0) return;
+    try {
+      const response = await fetch("/api/chats/group", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          name: groupName.trim(),
+          description: groupDesc.trim(),
+          avatarUrl: groupPic,
+          participantIds: selectedMemberIds
+        })
+      });
+
+      if (response.ok) {
+        const newGroupChat = await response.json();
+        onSelectChat(newGroupChat);
+        
+        // Reset and close
+        setShowCreateGroupModal(false);
+        setGroupName("");
+        setGroupDesc("");
+        setGroupPic("");
+        setSelectedMemberIds([]);
+        setGroupSearchQuery("");
+        setGroupSearchResults([]);
+      }
+    } catch (err) {
+      console.error("Failed to create group chat:", err);
+    }
   };
 
   const formatTime = (timeStr: string) => {
@@ -91,13 +165,22 @@ export default function Sidebar({
             <MessageSquare className="w-5 h-5 text-blue-500 animate-pulse" />
             <span className="font-extrabold tracking-tight text-white text-base">Quantix Connect</span>
           </div>
-          <button
-            onClick={onOpenSettings}
-            className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-            title="Open Settings"
-          >
-            <Settings className="w-4.5 h-4.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowCreateGroupModal(true)}
+              className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              title="Establish Secure Group"
+            >
+              <UserPlus className="w-4.5 h-4.5 text-blue-400" />
+            </button>
+            <button
+              onClick={onOpenSettings}
+              className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              title="Open Settings"
+            >
+              <Settings className="w-4.5 h-4.5" />
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -170,12 +253,16 @@ export default function Sidebar({
             {sortedChats.length === 0 ? (
               <div className="px-4 py-8 text-xs text-slate-600 text-center leading-relaxed">
                 No active conversations.<br />
-                <span className="text-[10px] text-slate-700">Type in the search box to find users and start a chat!</span>
+                <span className="text-[10px] text-slate-700">Type in the search box or establish a group chat!</span>
               </div>
             ) : (
               sortedChats.map((chat) => {
                 const partner = chat.otherParticipant;
-                if (!partner) return null;
+                const isGroup = !!chat.isGroup;
+                if (!partner && !isGroup) return null;
+
+                const chatName = isGroup ? chat.name || "Group Chat" : (partner?.displayName || "Conversation");
+                const chatAvatarUrl = isGroup ? chat.avatarUrl : partner?.avatarUrl;
                 const isActive = chat.id === activeChatId;
 
                 return (
@@ -190,15 +277,24 @@ export default function Sidebar({
                   >
                     {/* Avatar with Presence Dot */}
                     <div className="relative shrink-0">
-                      {partner.avatarUrl ? (
-                        <img src={partner.avatarUrl} alt={partner.displayName} className="w-11 h-11 rounded-full object-cover" />
+                      {chatAvatarUrl ? (
+                        <img src={chatAvatarUrl} alt={chatName} className="w-11 h-11 rounded-full object-cover" />
+                      ) : isGroup ? (
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-900/40 to-blue-900/40 border border-blue-500/10 flex items-center justify-center text-blue-400 text-sm font-bold shadow-inner">
+                          <Users className="w-5 h-5 text-blue-400" />
+                        </div>
                       ) : (
                         <div className="w-11 h-11 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400 text-sm font-bold">
-                          {partner.displayName.charAt(0).toUpperCase()}
+                          {chatName.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      {partner.status === "online" && (
+                      {!isGroup && partner && partner.status === "online" && (
                         <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse"></span>
+                      )}
+                      {isGroup && (
+                        <span className="absolute -bottom-0.5 -right-0.5 bg-blue-950 border border-blue-500/40 text-[8px] px-1 text-blue-400 rounded-md font-mono font-bold uppercase tracking-wider scale-90">
+                          GP
+                        </span>
                       )}
                     </div>
 
@@ -206,7 +302,7 @@ export default function Sidebar({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-0.5">
                         <span className={`text-xs font-bold truncate ${isActive ? "text-blue-400" : "text-white"}`}>
-                          {partner.displayName}
+                          {chatName}
                         </span>
                         <span className="text-[9px] text-slate-500 shrink-0">
                           {chat.lastMessage ? formatTime(chat.lastMessage.createdAt) : formatTime(chat.updatedAt)}
@@ -277,6 +373,227 @@ export default function Sidebar({
           <Settings className="w-4.5 h-4.5" />
         </button>
       </div>
+
+      {/* CREATE GROUP CHAT MODAL */}
+      {showCreateGroupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="bg-slate-900 border border-blue-500/20 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="p-5 border-b border-blue-500/10 flex items-center justify-between bg-slate-950/40">
+              <div>
+                <h3 className="font-extrabold text-white text-base tracking-tight">Initiate Group Chat</h3>
+                <p className="text-[10px] text-slate-500 font-mono">Quantix Secure Encrypted Protocol</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCreateGroupModal(false);
+                  setGroupName("");
+                  setGroupDesc("");
+                  setGroupPic("");
+                  setSelectedMemberIds([]);
+                  setGroupSearchQuery("");
+                  setGroupSearchResults([]);
+                }}
+                className="text-slate-400 hover:text-white font-bold text-xs p-1 hover:bg-slate-800 rounded-lg transition"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="p-5 overflow-y-auto space-y-4 flex-1 scrollbar-thin">
+              {/* Profile Pic Upload & Name */}
+              <div className="flex gap-4 items-center">
+                <div className="relative shrink-0">
+                  {groupPic ? (
+                    <img src={groupPic} alt="Group preview" className="w-16 h-16 rounded-2xl object-cover border border-blue-500/20" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-blue-950/50 border border-blue-500/10 flex flex-col items-center justify-center text-blue-400 cursor-pointer hover:bg-blue-900/20 transition">
+                      <Users className="w-6 h-6" />
+                      <span className="text-[8px] font-bold mt-1 uppercase tracking-wider">Upload</span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setGroupPic(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex-1 space-y-1">
+                  <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Group Name</label>
+                  <input
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="e.g. Quantum Core Devs"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                  />
+                </div>
+              </div>
+
+              {/* Group Description */}
+              <div className="space-y-1">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Description (Optional)</label>
+                <input
+                  type="text"
+                  value={groupDesc}
+                  onChange={(e) => setGroupDesc(e.target.value)}
+                  placeholder="What is this secure channel about?"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                />
+              </div>
+
+              {/* Selected Members Tags */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                  Selected Members ({selectedMemberIds.length})
+                </label>
+                {selectedMemberIds.length === 0 ? (
+                  <div className="text-[11px] text-slate-600 italic">No members selected. Add people below.</div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto p-1.5 bg-slate-950/40 rounded-xl border border-slate-800">
+                    {selectedMemberIds.map(id => {
+                      const foundUser = groupSearchResults.find(u => u.id === id) || chats.flatMap(c => c.participants || []).find(p => p.id === id);
+                      if (!foundUser) return null;
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 bg-blue-950/50 border border-blue-500/20 text-blue-400 text-[10px] font-bold pl-2 pr-1 py-0.5 rounded-lg">
+                          {foundUser.displayName}
+                          <button
+                            onClick={() => setSelectedMemberIds(prev => prev.filter(mid => mid !== id))}
+                            className="hover:bg-blue-900/50 rounded p-0.5 text-blue-300 font-extrabold text-[8px] leading-none"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Members Search */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500">Search Users to Add</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={groupSearchQuery}
+                    onChange={(e) => setGroupSearchQuery(e.target.value)}
+                    placeholder="Search user to add..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-4 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500/50"
+                  />
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" />
+                </div>
+
+                <div className="space-y-1 max-h-36 overflow-y-auto border border-slate-800/60 rounded-xl divide-y divide-slate-800/40">
+                  {groupSearchQuery.trim() === "" ? (
+                    // Show recent direct chat partners as convenient recommendations
+                    chats.map(c => c.otherParticipant).filter((p): p is User => !!p).slice(0, 5).map(user => {
+                      const isSelected = selectedMemberIds.includes(user.id);
+                      return (
+                        <div key={user.id} className="flex items-center justify-between p-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-300">
+                                {user.displayName.charAt(0)}
+                              </div>
+                            )}
+                            <span className="font-medium text-white">{user.displayName}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedMemberIds(prev => prev.filter(id => id !== user.id));
+                              } else {
+                                setSelectedMemberIds(prev => [...prev, user.id]);
+                              }
+                            }}
+                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition cursor-pointer ${
+                              isSelected 
+                                ? "bg-red-950/40 border border-red-500/20 text-red-400 hover:bg-red-900/30"
+                                : "bg-blue-950/40 border border-blue-500/20 text-blue-400 hover:bg-blue-900/30"
+                            }`}
+                          >
+                            {isSelected ? "Remove" : "Add"}
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : groupSearching ? (
+                    <div className="text-center py-4 text-xs text-slate-500">Searching...</div>
+                  ) : groupSearchResults.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-slate-500">No matching users.</div>
+                  ) : (
+                    groupSearchResults.map(user => {
+                      const isSelected = selectedMemberIds.includes(user.id);
+                      return (
+                        <div key={user.id} className="flex items-center justify-between p-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-300">
+                                {user.displayName.charAt(0)}
+                              </div>
+                            )}
+                            <div>
+                              <span className="font-medium text-white block">{user.displayName}</span>
+                              <span className="text-[8px] text-slate-500 font-mono">@{user.username}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedMemberIds(prev => prev.filter(id => id !== user.id));
+                              } else {
+                                setSelectedMemberIds(prev => [...prev, user.id]);
+                              }
+                            }}
+                            className={`text-[10px] font-bold px-2 py-1 rounded-lg transition cursor-pointer ${
+                              isSelected 
+                                ? "bg-red-950/40 border border-red-500/20 text-red-400 hover:bg-red-900/30"
+                                : "bg-blue-950/40 border border-blue-500/20 text-blue-400 hover:bg-blue-900/30"
+                            }`}
+                          >
+                            {isSelected ? "Remove" : "Add"}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 bg-slate-950/40 border-t border-blue-500/10 flex justify-end gap-2">
+              <button
+                onClick={handleEstablishGroup}
+                disabled={!groupName.trim() || selectedMemberIds.length === 0}
+                className="bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition shadow-lg shadow-blue-500/20 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Establish Secure Group</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -20,6 +20,14 @@ export default function App() {
   
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3800);
+    return () => clearTimeout(timer);
+  }, []);
   
   const socketRef = useRef<any>(null);
 
@@ -448,6 +456,88 @@ export default function App() {
         <div className="w-12 h-1 bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-blue-500 rounded-full w-1/2 animate-[shimmer_1.5s_infinite_linear]"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (showSplash) {
+    return (
+      <div className="h-screen w-screen overflow-hidden bg-black text-slate-100 flex flex-col relative select-none">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="splash-screen"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -50, transition: { duration: 0.8, ease: "easeInOut" } }}
+            className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden"
+          >
+            {/* Ambient Background Glows */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08),transparent_50%)] pointer-events-none opacity-80" />
+            
+            {/* Grid Overlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.01)_1px,transparent_1px)] bg-[size:40px_40px] opacity-70" />
+
+            <div className="relative flex flex-col items-center max-w-lg text-center px-6">
+              
+              {/* Logo icon */}
+              <motion.div
+                initial={{ scale: 0.3, opacity: 0, rotate: -20 }}
+                animate={{ scale: [0.3, 1.1, 1], opacity: 1, rotate: 0 }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                className="w-20 h-20 bg-blue-600 rounded-[28px] flex items-center justify-center shadow-[0_0_50px_rgba(37,99,235,0.4)] border border-blue-400/30 mb-8 relative"
+              >
+                <MessageSquare className="w-10 h-10 text-white fill-white/10" />
+                <motion.div 
+                  className="absolute inset-0 rounded-[28px] border border-blue-400"
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                />
+              </motion.div>
+
+              {/* Quantix Connect Title */}
+              <motion.h1
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
+                className="text-4xl font-extrabold tracking-tighter text-white uppercase drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+              >
+                Quantix Connect
+              </motion.h1>
+
+              {/* Glowing divider line */}
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 140, opacity: 1 }}
+                transition={{ delay: 0.8, duration: 1, ease: "easeInOut" }}
+                className="h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent my-6"
+              />
+
+              {/* Built by expectations subtitle */}
+              <motion.div
+                initial={{ y: 15, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 1.6, duration: 0.8, ease: "easeOut" }}
+                className="space-y-2"
+              >
+                <span className="text-[10px] font-mono tracking-[0.25em] text-slate-500 uppercase block">
+                  Secure Protocol Core
+                </span>
+                <p className="text-xs text-blue-400 font-medium tracking-wide">
+                  built by <span className="text-white font-semibold">Expectations</span> for <span className="text-blue-400 font-bold">Quantix Tech</span>
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Bottom Version Indicator */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2.2, duration: 0.6 }}
+              className="absolute bottom-6 text-[9px] font-mono tracking-widest text-slate-600 uppercase"
+            >
+              System Ver: v3.4.1 // SECURE_LINK
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     );
   }

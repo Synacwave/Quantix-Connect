@@ -309,7 +309,7 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
 
     const chats = await db.getChatsForUser(userId);
     const formatted = chats.map((c: any) => {
-      // Find other participant
+      // Find other participant for direct chats
       const otherParticipant = c.participants.find((p: any) => p && p._id.toString() !== userId);
       const isPinned = c.pinnedBy.some((id: any) => id.toString() === userId);
       
@@ -318,11 +318,26 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         ? (c.unreadCounts.get(userId) || 0)
         : (c.unreadCounts?.[userId] || 0);
 
+      const formattedParticipants = c.participants.map((p: any) => p ? {
+        id: p._id.toString(),
+        username: p.username,
+        displayName: p.displayName,
+        avatarUrl: p.avatarUrl,
+        status: p.status,
+        lastSeen: p.lastSeen
+      } : null).filter(Boolean);
+
       return {
         id: c._id.toString(),
         isPinned,
         unreadCount,
         updatedAt: c.updatedAt,
+        isGroup: !!c.isGroup,
+        name: c.name || "",
+        description: c.description || "",
+        avatarUrl: c.avatarUrl || "",
+        admins: c.admins ? c.admins.map((id: any) => id.toString()) : [],
+        participants: formattedParticipants,
         otherParticipant: otherParticipant ? {
           id: otherParticipant._id.toString(),
           username: otherParticipant.username,
@@ -424,6 +439,120 @@ router.post("/chats/pin", authenticateToken, async (req: AuthenticatedRequest, r
   }
 });
 
+// Create Group Chat
+router.post("/chats/group", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { name, description, avatarUrl, participantIds } = req.body;
+
+    if (!selfId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!name || !name.trim()) {
+      res.status(400).json({ error: "Group name is required." });
+      return;
+    }
+
+    // Save avatar pic if base64 upload
+    let savedAvatarUrl = avatarUrl || "";
+    if (avatarUrl && avatarUrl.startsWith("data:")) {
+      try {
+        savedAvatarUrl = saveBase64File(avatarUrl);
+      } catch (err) {
+        console.error("Failed to save group profile image", err);
+      }
+    }
+
+    // Ensure selfId is included in participants
+    const uniqueParticipants = Array.from(new Set([selfId, ...(participantIds || [])]));
+
+    const chatData = {
+      isGroup: true,
+      name: name.trim(),
+      description: (description || "").trim(),
+      avatarUrl: savedAvatarUrl,
+      participants: uniqueParticipants,
+      pinnedBy: [],
+      unreadCounts: uniqueParticipants.reduce((acc: any, pid: string) => {
+        acc[pid] = 0;
+        return acc;
+      }, {}),
+      admins: [selfId]
+    };
+
+    let chat;
+    if (isMongoDB && MongoChat) {
+      const newChat = new MongoChat(chatData);
+      await newChat.save();
+      chat = await MongoChat.findById(newChat._id).populate("participants", "-passwordHash");
+    } else {
+      const storePath = path.join(process.cwd(), "data", "db.json");
+      const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+      
+      const newChatId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const localChat: any = {
+        _id: newChatId,
+        participants: uniqueParticipants,
+        pinnedBy: [],
+        lastMessage: null,
+        unreadCounts: uniqueParticipants.reduce((acc: any, pid: string) => {
+          acc[pid] = 0;
+          return acc;
+        }, {}),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isGroup: true,
+        name: name.trim(),
+        description: (description || "").trim(),
+        avatarUrl: savedAvatarUrl,
+        admins: [selfId]
+      };
+      
+      store.chats.push(localChat);
+      fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+      const participantsPopulated = localChat.participants.map((pid: string) => {
+        const user = store.users.find((u: any) => u._id === pid);
+        if (!user) return null;
+        const { passwordHash, ...rest } = user;
+        return rest;
+      }).filter(Boolean);
+
+      chat = {
+        ...localChat,
+        participants: participantsPopulated
+      };
+    }
+
+    res.status(201).json({
+      id: chat._id.toString(),
+      isPinned: false,
+      unreadCount: 0,
+      updatedAt: chat.updatedAt,
+      isGroup: true,
+      name: chat.name,
+      description: chat.description,
+      avatarUrl: chat.avatarUrl,
+      admins: chat.admins ? chat.admins.map((id: any) => id.toString()) : [],
+      participants: chat.participants.map((p: any) => ({
+        id: p._id.toString(),
+        username: p.username,
+        displayName: p.displayName,
+        avatarUrl: p.avatarUrl,
+        status: p.status,
+        lastSeen: p.lastSeen
+      })),
+      otherParticipant: null,
+      lastMessage: null
+    });
+  } catch (error) {
+    console.error("Create Group Chat Error:", error);
+    res.status(500).json({ error: "Server error creating group chat." });
+  }
+});
+
 // --- MESSAGE ROUTES ---
 
 // Get Messages inside a Chat
@@ -477,21 +606,14 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
       return;
     }
 
-    // Save message to database
-    const savedMsg = await db.createMessage({
-      chatId,
-      senderId: selfId,
-      text: text || "",
-      mediaUrl: mediaUrl || "",
-      mediaType: mediaType || "text"
-    });
-
-    // Get chat participants to broadcast to
+    // 1. Fetch chat to check for group and commands
+    let chatObj: any = null;
     let participants: string[] = [];
+    
     if (isMongoDB && MongoChat) {
-      const chat = await MongoChat.findById(chatId);
-      if (chat) {
-        participants = chat.participants.map((p: any) => p.toString());
+      chatObj = await MongoChat.findById(chatId).populate("participants", "-passwordHash");
+      if (chatObj) {
+        participants = chatObj.participants.map((p: any) => p._id.toString());
       }
     } else {
       try {
@@ -500,13 +622,389 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
           const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
           const chat = store.chats.find((c: any) => c._id === chatId);
           if (chat) {
+            chatObj = chat;
             participants = chat.participants;
           }
         }
-      } catch (err) {
-        console.error("Local DB participants lookup failed:", err);
+      } catch (err) {}
+    }
+
+    if (!chatObj) {
+      res.status(404).json({ error: "Chat not found." });
+      return;
+    }
+
+    const isGroup = !!chatObj.isGroup;
+    const adminsList = chatObj.admins ? chatObj.admins.map((a: any) => a.toString()) : [];
+    const isAdmin = adminsList.includes(selfId);
+
+    // 2. Parse command if it is one
+    if (text && text.trim().startsWith("/")) {
+      const parts = text.trim().split(" ");
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1).join(" ").trim();
+
+      // Check for global /creategroup command
+      if (command === "/creategroup") {
+        if (!args) {
+          res.status(400).json({ error: "Please specify a group name: `/creategroup <group_name>`" });
+          return;
+        }
+
+        // Parse group name and optionally tagged usernames
+        // e.g., `/creategroup Beta Testers @john @alice`
+        const argParts = args.split(" ");
+        const usernames: string[] = [];
+        const nameParts: string[] = [];
+
+        argParts.forEach(p => {
+          if (p.startsWith("@")) {
+            usernames.push(p.substring(1).toLowerCase());
+          } else {
+            nameParts.push(p);
+          }
+        });
+
+        const groupName = nameParts.join(" ").trim() || "New Group";
+        const foundParticipantIds: string[] = [];
+
+        // Search for those users
+        for (const username of usernames) {
+          const user = await db.findUserByUsername(username);
+          if (user) {
+            foundParticipantIds.push(user._id.toString());
+          }
+        }
+
+        // Create group chat
+        const finalParticipants = Array.from(new Set([selfId, ...foundParticipantIds]));
+        const chatData = {
+          isGroup: true,
+          name: groupName,
+          description: `Group created via slash command in Chat`,
+          avatarUrl: "",
+          participants: finalParticipants,
+          pinnedBy: [],
+          unreadCounts: finalParticipants.reduce((acc: any, pid: string) => {
+            acc[pid] = 0;
+            return acc;
+          }, {}),
+          admins: [selfId]
+        };
+
+        let newChat;
+        if (isMongoDB && MongoChat) {
+          const mongoC = new MongoChat(chatData);
+          await mongoC.save();
+          newChat = await MongoChat.findById(mongoC._id).populate("participants", "-passwordHash");
+        } else {
+          const storePath = path.join(process.cwd(), "data", "db.json");
+          const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+          const newChatId = Math.random().toString(36).substring(2, 15);
+          const localChat: any = {
+            _id: newChatId,
+            participants: finalParticipants,
+            pinnedBy: [],
+            lastMessage: null,
+            unreadCounts: finalParticipants.reduce((acc: any, pid: string) => {
+              acc[pid] = 0;
+              return acc;
+            }, {}),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isGroup: true,
+            name: groupName,
+            description: `Group created via slash command in Chat`,
+            avatarUrl: "",
+            admins: [selfId]
+          };
+          store.chats.push(localChat);
+          fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+
+          const populated = localChat.participants.map((pid: string) => {
+            const user = store.users.find((u: any) => u._id === pid);
+            if (!user) return null;
+            const { passwordHash, ...rest } = user;
+            return rest;
+          }).filter(Boolean);
+
+          newChat = {
+            ...localChat,
+            participants: populated
+          };
+        }
+
+        // Save system message in original chat
+        const creator = await db.findUserById(selfId);
+        const creatorName = creator ? creator.displayName : "Admin";
+        const systemText = `🛠️ **${creatorName}** created a new Group Chat: **"${groupName}"** with ${finalParticipants.length} participants!`;
+
+        const systemMsg = await db.createMessage({
+          chatId,
+          senderId: "000000000000000000000000", // System ObjectId
+          text: systemText,
+          mediaType: "text"
+        });
+
+        const formattedSystemMsg = {
+          id: systemMsg._id.toString(),
+          chatId: systemMsg.chatId.toString(),
+          senderId: "000000000000000000000000",
+          text: systemMsg.text,
+          mediaUrl: "",
+          mediaType: "text",
+          readBy: [selfId],
+          createdAt: systemMsg.createdAt
+        };
+
+        // Broadcast to existing room
+        broadcastNewMessage(chatId, participants, formattedSystemMsg);
+
+        // Also broadcast the new group chat to all new participants!
+        const systemGroupMsg = await db.createMessage({
+          chatId: newChat._id.toString(),
+          senderId: "000000000000000000000000",
+          text: `🎉 Welcome to **${groupName}**! Created by **${creatorName}**. Type \`/help\` for admin commands.`,
+          mediaType: "text"
+        });
+
+        const formattedGroupMsg = {
+          id: systemGroupMsg._id.toString(),
+          chatId: systemGroupMsg.chatId.toString(),
+          senderId: "000000000000000000000000",
+          text: systemGroupMsg.text,
+          mediaUrl: "",
+          mediaType: "text",
+          readBy: [selfId],
+          createdAt: systemGroupMsg.createdAt
+        };
+
+        broadcastNewMessage(newChat._id.toString(), finalParticipants, formattedGroupMsg);
+
+        res.status(201).json(formattedSystemMsg);
+        return;
+      }
+
+      // Group-specific commands
+      if (isGroup) {
+        let systemMessageText = "";
+        let updatedChatData: any = {};
+        const sender = await db.findUserById(selfId);
+        const senderName = sender ? sender.displayName : "Member";
+
+        if (command === "/help") {
+          systemMessageText = `💡 **Quantix Connect - Group Admin Commands**:\n` +
+            `• \`/name <new name>\` - Set group chat name (Admin-only)\n` +
+            `• \`/desc <description>\` - Set group description (Admin-only)\n` +
+            `• \`/pic <image_url_or_base64>\` - Set group avatar pic (or attach an image with \`/pic\`) (Admin-only)\n` +
+            `• \`/add <username>\` - Add user to group (Admin-only)\n` +
+            `• \`/kick <username>\` - Remove user from group (Admin-only)\n` +
+            `• \`/promote <username>\` - Promote user to Admin (Admin-only)\n` +
+            `• \`/demote <username>\` - Demote user from Admin (Admin-only)\n` +
+            `• \`/leave\` - Leave this group chat`;
+        } else if (command === "/leave") {
+          systemMessageText = `👋 **${senderName}** has left the group.`;
+          updatedChatData.removeParticipant = selfId;
+        } else {
+          // Admin authorization guard
+          if (!isAdmin) {
+            res.status(403).json({ error: "Only group Admins can perform this command." });
+            return;
+          }
+
+          if (command === "/name") {
+            if (!args) {
+              res.status(400).json({ error: "Please specify a group name: `/name <new_name>`" });
+              return;
+            }
+            updatedChatData.name = args;
+            systemMessageText = `✏️ **${senderName}** renamed the group to **"${args}"**.`;
+          } else if (command === "/desc") {
+            updatedChatData.description = args;
+            systemMessageText = args 
+              ? `📝 **${senderName}** updated the group description: "${args}"`
+              : `📝 **${senderName}** cleared the group description.`;
+          } else if (command === "/pic") {
+            let picUrl = args;
+            if (mediaUrl && mediaType === "image") {
+              picUrl = mediaUrl;
+            }
+            if (!picUrl) {
+              res.status(400).json({ error: "Please specify an image URL/base64, or attach a photo with this command." });
+              return;
+            }
+            updatedChatData.avatarUrl = picUrl;
+            systemMessageText = `🖼️ **${senderName}** updated the group profile picture.`;
+          } else if (command === "/add") {
+            if (!args) {
+              res.status(400).json({ error: "Specify a username: `/add <username>`" });
+              return;
+            }
+            const targetUser = await db.findUserByUsername(args.trim().toLowerCase());
+            if (!targetUser) {
+              res.status(404).json({ error: `User with username "${args}" not found.` });
+              return;
+            }
+            const targetId = targetUser._id.toString();
+            if (participants.includes(targetId)) {
+              res.status(400).json({ error: `${targetUser.displayName} is already in the group.` });
+              return;
+            }
+            updatedChatData.addParticipant = targetId;
+            systemMessageText = `➕ **${senderName}** added **${targetUser.displayName}** (@${targetUser.username}) to the group.`;
+          } else if (command === "/kick") {
+            if (!args) {
+              res.status(400).json({ error: "Specify a username: `/kick <username>`" });
+              return;
+            }
+            const targetUser = await db.findUserByUsername(args.trim().toLowerCase());
+            if (!targetUser) {
+              res.status(404).json({ error: `User with username "${args}" not found.` });
+              return;
+            }
+            const targetId = targetUser._id.toString();
+            if (!participants.includes(targetId)) {
+              res.status(400).json({ error: `${targetUser.displayName} is not in this group.` });
+              return;
+            }
+            updatedChatData.removeParticipant = targetId;
+            systemMessageText = `❌ **${senderName}** removed **${targetUser.displayName}** from the group.`;
+          } else if (command === "/promote") {
+            if (!args) {
+              res.status(400).json({ error: "Specify a username: `/promote <username>`" });
+              return;
+            }
+            const targetUser = await db.findUserByUsername(args.trim().toLowerCase());
+            if (!targetUser) {
+              res.status(404).json({ error: `User with username "${args}" not found.` });
+              return;
+            }
+            const targetId = targetUser._id.toString();
+            if (adminsList.includes(targetId)) {
+              res.status(400).json({ error: `${targetUser.displayName} is already an Admin.` });
+              return;
+            }
+            updatedChatData.addAdmin = targetId;
+            systemMessageText = `🛡️ **${senderName}** promoted **${targetUser.displayName}** to Admin.`;
+          } else if (command === "/demote") {
+            if (!args) {
+              res.status(400).json({ error: "Specify a username: `/demote <username>`" });
+              return;
+            }
+            const targetUser = await db.findUserByUsername(args.trim().toLowerCase());
+            if (!targetUser) {
+              res.status(404).json({ error: `User with username "${args}" not found.` });
+              return;
+            }
+            const targetId = targetUser._id.toString();
+            if (!adminsList.includes(targetId)) {
+              res.status(400).json({ error: `${targetUser.displayName} is not an Admin.` });
+              return;
+            }
+            updatedChatData.removeAdmin = targetId;
+            systemMessageText = `🎖️ **${senderName}** demoted **${targetUser.displayName}** from Admin.`;
+          } else {
+            res.status(400).json({ error: `Unknown command "${command}". Type /help for available commands.` });
+            return;
+          }
+        }
+
+        // Apply changes to database
+        if (isMongoDB && MongoChat) {
+          const updateQuery: any = {};
+          if (updatedChatData.name) updateQuery.name = updatedChatData.name;
+          if (updatedChatData.description !== undefined) updateQuery.description = updatedChatData.description;
+          if (updatedChatData.avatarUrl) updateQuery.avatarUrl = updatedChatData.avatarUrl;
+
+          const atomic: any = {};
+          if (updatedChatData.addParticipant) atomic.$addToSet = { participants: updatedChatData.addParticipant };
+          if (updatedChatData.removeParticipant) atomic.$pull = { participants: updatedChatData.removeParticipant, admins: updatedChatData.removeParticipant };
+          if (updatedChatData.addAdmin) atomic.$addToSet = { admins: updatedChatData.addAdmin };
+          if (updatedChatData.removeAdmin) atomic.$pull = { admins: updatedChatData.removeAdmin };
+
+          await MongoChat.findByIdAndUpdate(chatId, { ...updateQuery, ...atomic });
+
+          // Re-populate participants list
+          const reChat = await MongoChat.findById(chatId);
+          if (reChat) {
+            participants = reChat.participants.map((p: any) => p.toString());
+          }
+        } else {
+          const storePath = path.join(process.cwd(), "data", "db.json");
+          if (fs.existsSync(storePath)) {
+            const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+            const chatIdx = store.chats.findIndex((c: any) => c._id === chatId);
+            if (chatIdx !== -1) {
+              const chat = store.chats[chatIdx];
+              if (updatedChatData.name) chat.name = updatedChatData.name;
+              if (updatedChatData.description !== undefined) chat.description = updatedChatData.description;
+              if (updatedChatData.avatarUrl) chat.avatarUrl = updatedChatData.avatarUrl;
+
+              if (updatedChatData.addParticipant) {
+                if (!chat.participants.includes(updatedChatData.addParticipant)) {
+                  chat.participants.push(updatedChatData.addParticipant);
+                }
+              }
+              if (updatedChatData.removeParticipant) {
+                chat.participants = chat.participants.filter((p: any) => p !== updatedChatData.removeParticipant);
+                if (chat.admins) {
+                  chat.admins = chat.admins.filter((a: any) => a !== updatedChatData.removeParticipant);
+                }
+              }
+              if (updatedChatData.addAdmin) {
+                if (!chat.admins) chat.admins = [];
+                if (!chat.admins.includes(updatedChatData.addAdmin)) {
+                  chat.admins.push(updatedChatData.addAdmin);
+                }
+              }
+              if (updatedChatData.removeAdmin) {
+                if (chat.admins) {
+                  chat.admins = chat.admins.filter((a: any) => a !== updatedChatData.removeAdmin);
+                }
+              }
+
+              fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+              participants = chat.participants;
+            }
+          }
+        }
+
+        // Create and broadcast system action announcement message
+        const savedMsg = await db.createMessage({
+          chatId,
+          senderId: "000000000000000000000000",
+          text: systemMessageText,
+          mediaType: "text"
+        });
+
+        const formattedMsg = {
+          id: savedMsg._id.toString(),
+          chatId: savedMsg.chatId.toString(),
+          senderId: "000000000000000000000000",
+          text: savedMsg.text,
+          mediaUrl: "",
+          mediaType: "text",
+          readBy: [selfId],
+          createdAt: savedMsg.createdAt
+        };
+
+        broadcastNewMessage(chatId, participants, formattedMsg);
+        res.status(201).json(formattedMsg);
+        return;
+      } else {
+        res.status(400).json({ error: "Admin commands are only available in Group Chats. Try `/creategroup <name>` to start a group!" });
+        return;
       }
     }
+
+    // 3. Regular non-command message
+    const savedMsg = await db.createMessage({
+      chatId,
+      senderId: selfId,
+      text: text || "",
+      mediaUrl: mediaUrl || "",
+      mediaType: mediaType || "text"
+    });
 
     const formattedMsg = {
       id: savedMsg._id.toString(),
@@ -519,9 +1017,7 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
       createdAt: savedMsg.createdAt
     };
 
-    // Broadcast in real-time
     broadcastNewMessage(chatId, participants, formattedMsg);
-
     res.status(201).json(formattedMsg);
   } catch (error) {
     console.error("Create Message Error:", error);

@@ -12,6 +12,12 @@ export interface Chat {
   isPinned: boolean;
   unreadCount: number;
   updatedAt: string;
+  isGroup?: boolean;
+  name?: string;
+  description?: string;
+  avatarUrl?: string;
+  admins?: string[];
+  participants?: User[];
   otherParticipant: User | null;
   lastMessage: {
     id: string;
