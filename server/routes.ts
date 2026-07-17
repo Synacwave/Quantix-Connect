@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
-import { db, MongoChat } from "./db.js";
+import { db, MongoChat, isMongoDB } from "./db.js";
 import { broadcastNewMessage } from "./socket.js";
 
 const router = Router();
@@ -488,7 +488,7 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
 
     // Get chat participants to broadcast to
     let participants: string[] = [];
-    if (MongoChat && process.env.MONGODB_URI) {
+    if (isMongoDB && MongoChat) {
       const chat = await MongoChat.findById(chatId);
       if (chat) {
         participants = chat.participants.map((p: any) => p.toString());

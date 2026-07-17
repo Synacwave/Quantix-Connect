@@ -4,7 +4,7 @@ import path from "path";
 
 // Initialize environment
 const MONGODB_URI = process.env.MONGODB_URI;
-export const isMongoDB = !!MONGODB_URI;
+export let isMongoDB = !!MONGODB_URI;
 
 // --- MONGODB SCHEMA DEFINITIONS ---
 
@@ -42,15 +42,26 @@ export let MongoChat: any;
 export let MongoMessage: any;
 
 if (isMongoDB) {
-  try {
-    mongoose.connect(MONGODB_URI!);
+  // Define models immediately so they are available, but they won't be queried if isMongoDB becomes false
+  MongoUser = mongoose.model("User", UserSchema);
+  MongoChat = mongoose.model("Chat", ChatSchema);
+  MongoMessage = mongoose.model("Message", MessageSchema);
+
+  mongoose.connect(MONGODB_URI!, {
+    serverSelectionTimeoutMS: 4000, // Fail fast after 4 seconds
+    connectTimeoutMS: 5000,
+  }).then(() => {
     console.log("🟢 Quantix DB: Successfully connected to MongoDB Atlas!");
-    MongoUser = mongoose.model("User", UserSchema);
-    MongoChat = mongoose.model("Chat", ChatSchema);
-    MongoMessage = mongoose.model("Message", MessageSchema);
-  } catch (err) {
-    console.error("🔴 Quantix DB: MongoDB connection failed, falling back to Local JSON DB:", err);
-  }
+  }).catch((err) => {
+    console.error("🔴 Quantix DB: MongoDB connection failed, falling back to Local JSON DB:", err.message || err);
+    isMongoDB = false;
+  });
+
+  // Handle runtime connection errors to prevent process crash
+  mongoose.connection.on("error", (err) => {
+    console.error("🔴 Quantix DB: Runtime MongoDB error:", err.message || err);
+    isMongoDB = false;
+  });
 } else {
   console.log("🟡 Quantix DB: No MONGODB_URI found. Running in Local JSON Database Mode for immediate execution!");
 }
