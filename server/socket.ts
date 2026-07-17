@@ -167,6 +167,12 @@ export function broadcastNewMessage(chatId: string, participants: string[], mess
   });
 }
 
+// Helper to broadcast updated message attributes (like reactions, poll votes, etc.)
+export function broadcastMessageUpdate(chatId: string, messageId: string, updatedFields: any) {
+  if (!io) return;
+  io.to(`chat_${chatId}`).emit("message_updated", { chatId, messageId, updatedFields });
+}
+
 export function getIO(): SocketIOServer | null {
   return io;
 }

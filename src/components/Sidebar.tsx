@@ -9,6 +9,7 @@ interface SidebarProps {
   onSelectChat: (chat: Chat) => void;
   onOpenSettings: () => void;
   onStartDirectChat: (partner: User) => void;
+  onViewUserProfile?: (user: User) => void;
 }
 
 export default function Sidebar({
@@ -17,7 +18,8 @@ export default function Sidebar({
   activeChatId,
   onSelectChat,
   onOpenSettings,
-  onStartDirectChat
+  onStartDirectChat,
+  onViewUserProfile
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -219,7 +221,15 @@ export default function Sidebar({
                   onClick={() => handleUserSearchResultClick(user)}
                   className="w-full p-2.5 rounded-xl hover:bg-slate-900 flex items-center gap-3 transition text-left cursor-pointer border border-transparent hover:border-blue-500/10"
                 >
-                  <div className="relative shrink-0">
+                  <div 
+                    className="relative shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition"
+                    onClick={(e) => {
+                      if (onViewUserProfile) {
+                        e.stopPropagation();
+                        onViewUserProfile(user);
+                      }
+                    }}
+                  >
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt={user.displayName} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
@@ -276,7 +286,15 @@ export default function Sidebar({
                     }`}
                   >
                     {/* Avatar with Presence Dot */}
-                    <div className="relative shrink-0">
+                    <div 
+                      className={`relative shrink-0 ${!isGroup && partner ? "cursor-pointer hover:scale-105 active:scale-95 transition" : ""}`}
+                      onClick={(e) => {
+                        if (!isGroup && partner && onViewUserProfile) {
+                          e.stopPropagation();
+                          onViewUserProfile(partner);
+                        }
+                      }}
+                    >
                       {chatAvatarUrl ? (
                         <img src={chatAvatarUrl} alt={chatName} className="w-11 h-11 rounded-full object-cover" />
                       ) : isGroup ? (

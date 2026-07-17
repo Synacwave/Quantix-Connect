@@ -7,6 +7,49 @@ import LoginScreen from "./components/LoginScreen";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
 import SettingsModal from "./components/SettingsModal";
+import ProfileModal from "./components/ProfileModal";
+
+function playNotificationSound(type: "incoming" | "outgoing" = "incoming") {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    if (type === "incoming") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+      
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(880.00, ctx.currentTime + 0.1);
+      gain2.gain.setValueAtTime(0.08, ctx.currentTime + 0.1);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc2.start(ctx.currentTime + 0.1);
+      osc2.stop(ctx.currentTime + 0.3);
+    } else {
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.1);
+    }
+  } catch (e) {
+    // Context blocked or unsupported
+  }
+}
 
 export default function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
@@ -19,6 +62,7 @@ export default function App() {
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
 
@@ -142,6 +186,10 @@ export default function App() {
 
     // Receive live messages
     socket.on("new_message", (message: Message) => {
+      if (currentUser && message.senderId !== currentUser.id) {
+        playNotificationSound("incoming");
+      }
+
       setActiveChat((prevActive) => {
         if (prevActive && prevActive.id === message.chatId) {
           // If viewing this chat, add message to log and mark read
@@ -256,6 +304,18 @@ export default function App() {
       );
     });
 
+    // Receive message updates (reactions, poll votes)
+    socket.on("message_updated", ({ messageId, update }: { messageId: string; update: Partial<Message> }) => {
+      setMessages((prevMsgs) =>
+        prevMsgs.map((m) => {
+          if (m.id === messageId) {
+            return { ...m, ...update };
+          }
+          return m;
+        })
+      );
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -298,7 +358,14 @@ export default function App() {
     setActiveChat(null);
   };
 
-  const handleSendMessage = async (text: string, mediaUrl?: string, mediaType?: "text" | "image" | "voice" | "file") => {
+  const handleSendMessage = async (
+    text: string, 
+    mediaUrl?: string, 
+    mediaType?: "text" | "image" | "voice" | "file" | "poll",
+    replyTo?: any,
+    poll?: any,
+    selfDestructIn?: number
+  ) => {
     if (!activeChat || !token) return;
 
     try {
@@ -312,12 +379,17 @@ export default function App() {
           chatId: activeChat.id,
           text,
           mediaUrl,
-          mediaType: mediaType || "text"
+          mediaType: mediaType || "text",
+          replyTo,
+          poll,
+          selfDestructIn
         })
       });
 
       if (response.ok) {
         const savedMsg = await response.json();
+        
+        playNotificationSound("outgoing");
         
         // Optimistic / Direct update to messages list (duplicate checks are run in Socket listener)
         setMessages((prev) => {
@@ -561,6 +633,7 @@ export default function App() {
             onSelectChat={handleSelectChat}
             onOpenSettings={() => setShowSettings(true)}
             onStartDirectChat={handleStartDirectChat}
+            onViewUserProfile={setSelectedProfileUser}
           />
         </div>
 
@@ -614,6 +687,16 @@ export default function App() {
             onClose={() => setShowSettings(false)}
             onUpdateUser={(updated) => setCurrentUser(updated)}
             onLogout={handleLogout}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Profile Detail Modal Layer */}
+      <AnimatePresence>
+        {selectedProfileUser && (
+          <ProfileModal
+            user={selectedProfileUser}
+            onClose={() => setSelectedProfileUser(null)}
           />
         )}
       </AnimatePresence>

@@ -12,6 +12,8 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }: SettingsModalProps) {
   const [displayName, setDisplayName] = useState(user.displayName);
+  const [bio, setBio] = useState(user.bio || "");
+  const [customStatus, setCustomStatus] = useState(user.customStatus || "");
   const [avatarBase64, setAvatarBase64] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -56,7 +58,9 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
         },
         body: JSON.stringify({
           displayName: displayName.trim(),
-          avatarUrl: avatarBase64 || undefined
+          avatarUrl: avatarBase64 || undefined,
+          bio: bio.trim(),
+          customStatus: customStatus.trim()
         })
       });
 
@@ -161,6 +165,33 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Display Name"
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+              />
+            </div>
+
+            {/* Custom Status Input */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold text-slate-400 tracking-wide">Custom Status</label>
+                <span className="text-[10px] text-slate-500">e.g., 🚀 coding away</span>
+              </div>
+              <input
+                type="text"
+                value={customStatus}
+                onChange={(e) => setCustomStatus(e.target.value)}
+                placeholder="What's your vibe today?"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+              />
+            </div>
+
+            {/* Bio / About Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-400 tracking-wide">About (Bio)</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Write a short bio about yourself..."
+                rows={2}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
               />
             </div>
           </div>

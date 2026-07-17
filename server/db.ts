@@ -15,6 +15,8 @@ const UserSchema = new mongoose.Schema({
   avatarUrl: { type: String, default: "" },
   status: { type: String, enum: ["online", "offline"], default: "offline" },
   lastSeen: { type: Date, default: Date.now },
+  bio: { type: String, default: "Hey there! I am using Quantix Connect." },
+  customStatus: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -31,9 +33,24 @@ const MessageSchema = new mongoose.Schema({
   senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   text: { type: String, default: "" },
   mediaUrl: { type: String, default: "" },
-  mediaType: { type: String, enum: ["text", "image", "voice", "file"], default: "text" },
+  mediaType: { type: String, enum: ["text", "image", "voice", "file", "poll"], default: "text" },
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  replyTo: {
+    id: String,
+    text: String,
+    senderName: String
+  },
+  reactions: [{
+    emoji: String,
+    userId: String
+  }],
+  poll: {
+    question: String,
+    options: [String],
+    votes: { type: Map, of: [String], default: {} } // index -> list of user ids
+  },
+  selfDestructIn: Number,
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -78,6 +95,8 @@ interface LocalUser {
   avatarUrl: string;
   status: "online" | "offline";
   lastSeen: string;
+  bio?: string;
+  customStatus?: string;
   createdAt: string;
 }
 
@@ -97,9 +116,24 @@ interface LocalMessage {
   senderId: string;
   text: string;
   mediaUrl: string;
-  mediaType: "text" | "image" | "voice" | "file";
+  mediaType: "text" | "image" | "voice" | "file" | "poll";
   readBy: string[]; // User IDs
   deletedFor: string[]; // User IDs
+  replyTo?: {
+    id: string;
+    text: string;
+    senderName: string;
+  };
+  reactions?: Array<{
+    emoji: string;
+    userId: string;
+  }>;
+  poll?: {
+    question: string;
+    options: string[];
+    votes: Record<number, string[]>;
+  };
+  selfDestructIn?: number;
   createdAt: string;
 }
 
@@ -173,7 +207,9 @@ export const db = {
         username: userData.username.toLowerCase(),
         displayName: userData.displayName,
         passwordHash: userData.passwordHash,
-        avatarUrl: userData.avatarUrl || ""
+        avatarUrl: userData.avatarUrl || "",
+        bio: "Hey there! I am using Quantix Connect.",
+        customStatus: ""
       });
       return await user.save();
     } else {
@@ -186,6 +222,8 @@ export const db = {
         avatarUrl: userData.avatarUrl || "",
         status: "offline",
         lastSeen: new Date().toISOString(),
+        bio: "Hey there! I am using Quantix Connect.",
+        customStatus: "",
         createdAt: new Date().toISOString()
       };
       store.users.push(newUser);
@@ -364,7 +402,17 @@ export const db = {
     senderId: string;
     text?: string;
     mediaUrl?: string;
-    mediaType?: "text" | "image" | "voice" | "file";
+    mediaType?: "text" | "image" | "voice" | "file" | "poll";
+    replyTo?: {
+      id: string;
+      text: string;
+      senderName: string;
+    };
+    poll?: {
+      question: string;
+      options: string[];
+    };
+    selfDestructIn?: number;
   }) {
     if (isMongoDB && MongoMessage) {
       const msg = new MongoMessage({
@@ -374,7 +422,14 @@ export const db = {
         mediaUrl: msgData.mediaUrl || "",
         mediaType: msgData.mediaType || "text",
         readBy: [msgData.senderId],
-        deletedFor: []
+        deletedFor: [],
+        replyTo: msgData.replyTo,
+        poll: msgData.poll ? {
+          question: msgData.poll.question,
+          options: msgData.poll.options,
+          votes: {}
+        } : undefined,
+        selfDestructIn: msgData.selfDestructIn
       });
       await msg.save();
 
@@ -405,6 +460,13 @@ export const db = {
         mediaType: msgData.mediaType || "text",
         readBy: [msgData.senderId],
         deletedFor: [],
+        replyTo: msgData.replyTo,
+        poll: msgData.poll ? {
+          question: msgData.poll.question,
+          options: msgData.poll.options,
+          votes: {}
+        } : undefined,
+        selfDestructIn: msgData.selfDestructIn,
         createdAt: new Date().toISOString()
       };
       store.messages.push(newMsg);

@@ -3,8 +3,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
-import { db, MongoChat, isMongoDB } from "./db.js";
-import { broadcastNewMessage } from "./socket.js";
+import { db, MongoChat, MongoMessage, isMongoDB } from "./db.js";
+import { broadcastNewMessage, broadcastMessageUpdate } from "./socket.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "quantix_connect_super_secret_key_1337";
@@ -206,7 +206,9 @@ router.get("/auth/me", authenticateToken, async (req: AuthenticatedRequest, res:
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       status: user.status,
-      lastSeen: user.lastSeen
+      lastSeen: user.lastSeen,
+      bio: user.bio || "Hey there! I am using Quantix Connect.",
+      customStatus: user.customStatus || ""
     });
   } catch (error) {
     console.error("Get Me Error:", error);
@@ -218,7 +220,7 @@ router.get("/auth/me", authenticateToken, async (req: AuthenticatedRequest, res:
 router.put("/auth/profile", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
-    const { displayName, avatarUrl } = req.body;
+    const { displayName, avatarUrl, bio, customStatus } = req.body;
 
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
@@ -243,6 +245,14 @@ router.put("/auth/profile", authenticateToken, async (req: AuthenticatedRequest,
       }
     }
 
+    if (typeof bio === "string") {
+      updates.bio = bio.trim();
+    }
+
+    if (typeof customStatus === "string") {
+      updates.customStatus = customStatus.trim();
+    }
+
     const updatedUser = await db.updateUser(userId, updates);
     if (!updatedUser) {
       res.status(404).json({ error: "User not found" });
@@ -255,7 +265,9 @@ router.put("/auth/profile", authenticateToken, async (req: AuthenticatedRequest,
       displayName: updatedUser.displayName,
       avatarUrl: updatedUser.avatarUrl,
       status: updatedUser.status,
-      lastSeen: updatedUser.lastSeen
+      lastSeen: updatedUser.lastSeen,
+      bio: updatedUser.bio || "Hey there! I am using Quantix Connect.",
+      customStatus: updatedUser.customStatus || ""
     });
   } catch (error) {
     console.error("Update Profile Error:", error);
@@ -286,7 +298,9 @@ router.get("/users/search", authenticateToken, async (req: AuthenticatedRequest,
       displayName: u.displayName,
       avatarUrl: u.avatarUrl,
       status: u.status,
-      lastSeen: u.lastSeen
+      lastSeen: u.lastSeen,
+      bio: u.bio || "Hey there! I am using Quantix Connect.",
+      customStatus: u.customStatus || ""
     }));
 
     res.json(formatted);
@@ -324,7 +338,9 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         displayName: p.displayName,
         avatarUrl: p.avatarUrl,
         status: p.status,
-        lastSeen: p.lastSeen
+        lastSeen: p.lastSeen,
+        bio: p.bio || "Hey there! I am using Quantix Connect.",
+        customStatus: p.customStatus || ""
       } : null).filter(Boolean);
 
       return {
@@ -344,7 +360,9 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
           displayName: otherParticipant.displayName,
           avatarUrl: otherParticipant.avatarUrl,
           status: otherParticipant.status,
-          lastSeen: otherParticipant.lastSeen
+          lastSeen: otherParticipant.lastSeen,
+          bio: otherParticipant.bio || "Hey there! I am using Quantix Connect.",
+          customStatus: otherParticipant.customStatus || ""
         } : null,
         lastMessage: c.lastMessage ? {
           id: c.lastMessage._id ? c.lastMessage._id.toString() : c.lastMessage._id,
@@ -398,7 +416,9 @@ router.post("/chats/direct", authenticateToken, async (req: AuthenticatedRequest
         displayName: otherParticipant.displayName,
         avatarUrl: otherParticipant.avatarUrl,
         status: otherParticipant.status,
-        lastSeen: otherParticipant.lastSeen
+        lastSeen: otherParticipant.lastSeen,
+        bio: otherParticipant.bio || "Hey there! I am using Quantix Connect.",
+        customStatus: otherParticipant.customStatus || ""
       } : null,
       lastMessage: chat.lastMessage ? {
         id: chat.lastMessage._id ? chat.lastMessage._id.toString() : chat.lastMessage._id,
@@ -542,7 +562,9 @@ router.post("/chats/group", authenticateToken, async (req: AuthenticatedRequest,
         displayName: p.displayName,
         avatarUrl: p.avatarUrl,
         status: p.status,
-        lastSeen: p.lastSeen
+        lastSeen: p.lastSeen,
+        bio: p.bio || "Hey there! I am using Quantix Connect.",
+        customStatus: p.customStatus || ""
       })),
       otherParticipant: null,
       lastMessage: null
@@ -580,7 +602,15 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
       mediaUrl: m.mediaUrl,
       mediaType: m.mediaType,
       readBy: m.readBy.map((id: any) => id.toString()),
-      createdAt: m.createdAt
+      createdAt: m.createdAt,
+      replyTo: m.replyTo,
+      reactions: m.reactions || [],
+      poll: m.poll ? {
+        question: m.poll.question,
+        options: m.poll.options,
+        votes: m.poll.votes instanceof Map ? Object.fromEntries(m.poll.votes) : (m.poll.votes || {})
+      } : undefined,
+      selfDestructIn: m.selfDestructIn
     }));
 
     res.json(formatted);
@@ -594,15 +624,15 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
 router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const selfId = req.user?.id;
-    const { chatId, text, mediaUrl, mediaType } = req.body;
+    const { chatId, text, mediaUrl, mediaType, replyTo, poll, selfDestructIn } = req.body;
 
     if (!selfId || !chatId) {
       res.status(400).json({ error: "Chat ID is required." });
       return;
     }
 
-    if (!text && !mediaUrl) {
-      res.status(400).json({ error: "Message content or media is required." });
+    if (!text && !mediaUrl && !poll) {
+      res.status(400).json({ error: "Message content, media, or poll is required." });
       return;
     }
 
@@ -1003,7 +1033,10 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
       senderId: selfId,
       text: text || "",
       mediaUrl: mediaUrl || "",
-      mediaType: mediaType || "text"
+      mediaType: mediaType || "text",
+      replyTo,
+      poll,
+      selfDestructIn
     });
 
     const formattedMsg = {
@@ -1014,7 +1047,15 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
       mediaUrl: savedMsg.mediaUrl,
       mediaType: savedMsg.mediaType,
       readBy: savedMsg.readBy.map((id: any) => id.toString()),
-      createdAt: savedMsg.createdAt
+      createdAt: savedMsg.createdAt,
+      replyTo: savedMsg.replyTo,
+      reactions: savedMsg.reactions || [],
+      poll: savedMsg.poll ? {
+        question: savedMsg.poll.question,
+        options: savedMsg.poll.options,
+        votes: savedMsg.poll.votes instanceof Map ? Object.fromEntries(savedMsg.poll.votes) : (savedMsg.poll.votes || {})
+      } : undefined,
+      selfDestructIn: savedMsg.selfDestructIn
     };
 
     broadcastNewMessage(chatId, participants, formattedMsg);
@@ -1058,6 +1099,201 @@ router.post("/messages/delete", authenticateToken, async (req: AuthenticatedRequ
   } catch (error) {
     console.error("Delete Message Error:", error);
     res.status(500).json({ error: "Server error deleting message." });
+  }
+});
+
+// Add Reaction to Message
+router.post("/messages/:messageId/reaction", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+
+    if (!selfId || !emoji) {
+      res.status(400).json({ error: "Emoji is required." });
+      return;
+    }
+
+    let updatedMsg: any = null;
+    let chatId: string = "";
+
+    if (isMongoDB && MongoMessage) {
+      const message = await MongoMessage.findById(messageId);
+      if (!message) {
+        res.status(404).json({ error: "Message not found." });
+        return;
+      }
+
+      chatId = message.chatId.toString();
+      const existingIdx = message.reactions.findIndex((r: any) => r.userId.toString() === selfId);
+
+      if (existingIdx > -1) {
+        if (message.reactions[existingIdx].emoji === emoji) {
+          // Toggle off if same emoji
+          message.reactions.splice(existingIdx, 1);
+        } else {
+          // Update emoji if different
+          message.reactions[existingIdx].emoji = emoji;
+        }
+      } else {
+        // Add new reaction
+        message.reactions.push({ emoji, userId: selfId });
+      }
+
+      await message.save();
+      updatedMsg = message;
+    } else {
+      const storePath = path.join(process.cwd(), "data", "db.json");
+      if (fs.existsSync(storePath)) {
+        const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+        const msgIdx = store.messages.findIndex((m: any) => m._id === messageId);
+        if (msgIdx === -1) {
+          res.status(404).json({ error: "Message not found." });
+          return;
+        }
+
+        const message = store.messages[msgIdx];
+        chatId = message.chatId;
+
+        if (!message.reactions) {
+          message.reactions = [];
+        }
+
+        const existingIdx = message.reactions.findIndex((r: any) => r.userId === selfId);
+        if (existingIdx > -1) {
+          if (message.reactions[existingIdx].emoji === emoji) {
+            message.reactions.splice(existingIdx, 1);
+          } else {
+            message.reactions[existingIdx].emoji = emoji;
+          }
+        } else {
+          message.reactions.push({ emoji, userId: selfId });
+        }
+
+        fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+        updatedMsg = message;
+      }
+    }
+
+    if (updatedMsg) {
+      const finalReactions = updatedMsg.reactions || [];
+      broadcastMessageUpdate(chatId, messageId, { reactions: finalReactions });
+      res.json({ success: true, reactions: finalReactions });
+    } else {
+      res.status(404).json({ error: "Message not found." });
+    }
+  } catch (error) {
+    console.error("Reaction Error:", error);
+    res.status(500).json({ error: "Server error setting reaction." });
+  }
+});
+
+// Vote in a Poll
+router.post("/messages/:messageId/poll/vote", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { messageId } = req.params;
+    const { optionIndex } = req.body; // optionIndex is a number (0-indexed)
+
+    if (!selfId || optionIndex === undefined || typeof optionIndex !== "number") {
+      res.status(400).json({ error: "Option index is required." });
+      return;
+    }
+
+    let updatedMsg: any = null;
+    let chatId: string = "";
+
+    if (isMongoDB && MongoMessage) {
+      const message = await MongoMessage.findById(messageId);
+      if (!message || message.mediaType !== "poll" || !message.poll) {
+        res.status(404).json({ error: "Poll not found." });
+        return;
+      }
+
+      chatId = message.chatId.toString();
+      
+      // Mongoose Map votes: optionIndex string -> userIds array
+      const key = optionIndex.toString();
+      if (!message.poll.votes) {
+        message.poll.votes = new Map();
+      }
+
+      // Check all options and remove user from any other options (WhatsApp/Telegram allows single-selection default or multi)
+      // Let's do toggle single-selection vote (you vote for one, it untoggles other options for you)
+      const currentVotes = message.poll.votes.get(key) || [];
+      const hasVotedThis = currentVotes.includes(selfId);
+
+      // Clear user vote from all options first (standard single-choice Telegram poll)
+      for (const [optKey, vList] of message.poll.votes.entries()) {
+        const filtered = (vList as string[]).filter((uid: string) => uid !== selfId);
+        message.poll.votes.set(optKey, filtered);
+      }
+
+      // Toggle this option
+      if (!hasVotedThis) {
+        const newVotesList = [...(message.poll.votes.get(key) || []), selfId];
+        message.poll.votes.set(key, newVotesList);
+      }
+
+      // Mark modified for mixed type or map
+      message.markModified("poll.votes");
+      await message.save();
+      updatedMsg = message;
+    } else {
+      const storePath = path.join(process.cwd(), "data", "db.json");
+      if (fs.existsSync(storePath)) {
+        const store = JSON.parse(fs.readFileSync(storePath, "utf-8"));
+        const msgIdx = store.messages.findIndex((m: any) => m._id === messageId);
+        if (msgIdx === -1 || store.messages[msgIdx].mediaType !== "poll" || !store.messages[msgIdx].poll) {
+          res.status(404).json({ error: "Poll not found." });
+          return;
+        }
+
+        const message = store.messages[msgIdx];
+        chatId = message.chatId;
+
+        if (!message.poll.votes) {
+          message.poll.votes = {};
+        }
+
+        const currentVotes = message.poll.votes[optionIndex] || [];
+        const hasVotedThis = currentVotes.includes(selfId);
+
+        // Clear user vote from all options
+        for (const idx of Object.keys(message.poll.votes)) {
+          message.poll.votes[idx] = (message.poll.votes[idx] || []).filter((uid: string) => uid !== selfId);
+        }
+
+        // Toggle this option
+        if (!hasVotedThis) {
+          if (!message.poll.votes[optionIndex]) message.poll.votes[optionIndex] = [];
+          message.poll.votes[optionIndex].push(selfId);
+        }
+
+        fs.writeFileSync(storePath, JSON.stringify(store, null, 2));
+        updatedMsg = message;
+      }
+    }
+
+    if (updatedMsg) {
+      const votesObj = updatedMsg.poll.votes instanceof Map 
+        ? Object.fromEntries(updatedMsg.poll.votes) 
+        : (updatedMsg.poll.votes || {});
+      
+      const pollData = {
+        question: updatedMsg.poll.question,
+        options: updatedMsg.poll.options,
+        votes: votesObj
+      };
+
+      broadcastMessageUpdate(chatId, messageId, { poll: pollData });
+      res.json({ success: true, poll: pollData });
+    } else {
+      res.status(404).json({ error: "Message not found." });
+    }
+  } catch (error) {
+    console.error("Poll Vote Error:", error);
+    res.status(500).json({ error: "Server error casting vote." });
   }
 });
 
