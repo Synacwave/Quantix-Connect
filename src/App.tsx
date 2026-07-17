@@ -619,7 +619,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col relative select-none">
+    <div className="h-[100dvh] w-full max-w-full overflow-hidden bg-slate-950 text-slate-100 flex flex-col relative select-none">
       
       {/* Real-time full-page messaging content */}
       <div className="flex-1 flex overflow-hidden">
@@ -638,7 +638,7 @@ export default function App() {
         </div>
 
         {/* Chat Logs Pane */}
-        <div className={`${activeChat ? "flex" : "hidden md:flex"} flex-1 h-full`}>
+        <div className={`${activeChat ? "flex" : "hidden md:flex"} flex-1 h-full min-w-0`}>
           {activeChat ? (
             <ChatView
               currentUser={currentUser}

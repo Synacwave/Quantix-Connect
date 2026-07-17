@@ -69,6 +69,48 @@ export default function ChatView({
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
   
+  // Tagging members states
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const [tagFilter, setTagFilter] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSelectTag = (username: string) => {
+    const newValue = inputText.replace(/@\w*$/, `@${username} `);
+    setInputText(newValue);
+    setShowTagSuggestions(false);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const renderMessageText = (text: string) => {
+    if (!text) return null;
+    if (!activeChat.isGroup) {
+      return <p className="text-[12px] font-normal leading-relaxed break-words">{text}</p>;
+    }
+
+    // Split text by space while keeping the spaces
+    const parts = text.split(/(\s+)/);
+    return (
+      <p className="text-[12px] font-normal leading-relaxed break-words">
+        {parts.map((part, idx) => {
+          if (part.startsWith("@") && part.length > 1) {
+            const username = part.slice(1).replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+            const isMember = activeChat.participants?.some(p => p.username.toLowerCase() === username.toLowerCase());
+            if (isMember) {
+              return (
+                <span key={idx} className="text-blue-400 font-bold bg-blue-500/10 px-1 rounded hover:underline cursor-pointer">
+                  {part}
+                </span>
+              );
+            }
+          }
+          return part;
+        })}
+      </p>
+    );
+  };
+  
   // Poll States
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
@@ -120,7 +162,21 @@ export default function ChatView({
 
   // Handle typing state sockets
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputText(e.target.value);
+    const val = e.target.value;
+    setInputText(val);
+
+    if (activeChat.isGroup) {
+      const match = val.match(/@(\w*)$/);
+      if (match) {
+        const filter = match[1].toLowerCase();
+        setTagFilter(filter);
+        setShowTagSuggestions(true);
+      } else {
+        setShowTagSuggestions(false);
+      }
+    } else {
+      setShowTagSuggestions(false);
+    }
 
     if (!isTyping && socket) {
       setIsTyping(true);
@@ -518,8 +574,8 @@ export default function ChatView({
     : messages;
 
   return (
-    <div className="flex-1 h-full bg-slate-950 flex flex-row relative select-none overflow-hidden">
-      <div className="flex-1 h-full flex flex-col relative">
+    <div className="flex-1 h-full bg-slate-950 flex flex-row relative select-none overflow-hidden min-w-0">
+      <div className="flex-1 h-full flex flex-col relative min-w-0">
         {/* Interactive Chat Header */}
         <div className="px-4 py-3 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -665,6 +721,7 @@ export default function ChatView({
               const isRead = msg.readBy.length > 1; // Read by sender and receiver
               const senderUser = activeChat.participants?.find(p => p.id === msg.senderId) || (isSelf ? currentUser : null);
               const isStarred = starredMsgIds.includes(msg.id);
+              const isTaggedMe = activeChat.isGroup && msg.text && msg.text.toLowerCase().includes(`@${currentUser.username.toLowerCase()}`);
 
               return (
                 <motion.div
@@ -692,7 +749,7 @@ export default function ChatView({
                     </button>
                   )}
 
-                  <div className="relative max-w-[70%] flex flex-col gap-1 items-start">
+                  <div className="relative max-w-[85%] md:max-w-[70%] flex flex-col gap-1 items-start">
                     
                     {/* Floating Hover Actions Tool Panel (WhatsApp style) */}
                     <div className={`absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-1 z-10 ${
@@ -767,7 +824,9 @@ export default function ChatView({
                     <div className={`relative w-full rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition ${
                       isSelf 
                         ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
-                        : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
+                        : isTaggedMe
+                          ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
+                          : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
                     }`}>
                       
                       {/* Replying Block (Quoted Reply) */}
@@ -892,9 +951,7 @@ export default function ChatView({
                       })()}
 
                       {/* Text content */}
-                      {msg.mediaType === "text" && (
-                        <p className="text-[12px] font-normal leading-relaxed break-words">{msg.text}</p>
-                      )}
+                      {msg.mediaType === "text" && renderMessageText(msg.text)}
 
                       {/* Metadata line (Timestamp + Receipts + Disappearing) */}
                       <div className="flex items-center justify-end gap-1.5 text-[9px] text-slate-500 mt-1 self-end shrink-0 select-none">
@@ -973,6 +1030,55 @@ export default function ChatView({
 
         {/* Input Action Panel Bar */}
         <div className="p-3 bg-slate-950 border-t border-blue-500/10 flex flex-col gap-2 relative shrink-0">
+          
+          {/* Tag Suggestions Overlay Panel */}
+          <AnimatePresence>
+            {showTagSuggestions && activeChat.isGroup && (
+              (() => {
+                const suggestions = activeChat.participants?.filter(p => 
+                  p.id !== currentUser.id && 
+                  (p.username.toLowerCase().includes(tagFilter) || p.displayName.toLowerCase().includes(tagFilter))
+                ) || [];
+
+                if (suggestions.length === 0) return null;
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    className="absolute bottom-full mb-2 left-3 right-3 bg-slate-900 border border-blue-500/15 rounded-2xl p-2 shadow-2xl z-40 max-w-xs overflow-hidden flex flex-col divide-y divide-slate-800/50"
+                  >
+                    <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider text-slate-500">
+                      Mention Member
+                    </div>
+                    <div className="max-h-40 overflow-y-auto scrollbar-thin">
+                      {suggestions.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => handleSelectTag(user.username)}
+                          className="w-full px-3 py-2 text-left hover:bg-blue-600/10 text-xs flex items-center gap-2 transition"
+                        >
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-[8px] font-bold">
+                              {user.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex-1 truncate min-w-0">
+                            <span className="font-bold text-white block leading-tight text-[11px]">{user.displayName}</span>
+                            <span className="text-[9px] text-slate-400 block leading-none">@{user.username}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                );
+              })()
+            )}
+          </AnimatePresence>
           
           {/* Quoted Replying Preview Banner */}
           {replyingToMessage && (
@@ -1204,6 +1310,7 @@ export default function ChatView({
               // REGULAR INPUT FORM
               <form onSubmit={handleSendText} className="flex-1 flex gap-2">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={inputText}
                   onChange={handleInputChange}
@@ -1242,7 +1349,7 @@ export default function ChatView({
 
       {/* Group Info Right Sidebar */}
       {showGroupInfo && activeChat.isGroup && (
-        <div className="w-80 border-l border-blue-500/10 bg-slate-950 flex flex-col h-full animate-fade-in shrink-0 relative z-20">
+        <div className="w-full md:w-80 border-l border-blue-500/10 bg-slate-950 flex flex-col h-full animate-fade-in shrink-0 absolute md:relative right-0 top-0 z-20">
           {/* Header */}
           <div className="p-4 border-b border-blue-500/10 flex items-center justify-between bg-slate-900/20">
             <div className="flex items-center gap-2">

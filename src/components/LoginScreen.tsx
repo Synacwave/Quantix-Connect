@@ -72,7 +72,7 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-radial from-slate-900 via-blue-950 to-black p-4 select-none relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-radial from-slate-900 via-blue-950 to-black p-4 select-none relative overflow-hidden">
       {/* Decorative ambient blobs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl -z-10 animate-pulse duration-[6000ms]"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -z-10 animate-pulse duration-[8000ms]"></div>
@@ -81,7 +81,7 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full max-w-md bg-slate-950/75 backdrop-blur-xl border border-blue-500/15 rounded-3xl p-8 shadow-2xl relative"
+        className="w-full max-w-md bg-slate-950/75 backdrop-blur-xl border border-blue-500/15 rounded-3xl p-6 sm:p-8 shadow-2xl relative"
       >
         {/* App Title Header */}
         <div className="flex flex-col items-center mb-8">
@@ -231,6 +231,16 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
           <Shield className="w-3.5 h-3.5" />
           <span>AES-256 equivalent session encryption active</span>
         </div>
+      </motion.div>
+
+      {/* Copyright under the login page */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="mt-6 text-[11px] text-slate-500 tracking-wider text-center select-text font-light"
+      >
+        built by Expectations for Quantix Tech copyright2026
       </motion.div>
     </div>
   );

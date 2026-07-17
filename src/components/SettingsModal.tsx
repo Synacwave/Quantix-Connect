@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { motion } from "motion/react";
-import { X, Save, LogOut, Upload, Database, User as UserIcon, Settings } from "lucide-react";
+import { X, Save, LogOut, Upload, User as UserIcon, Settings } from "lucide-react";
 import { User } from "../types";
 
 interface SettingsModalProps {
@@ -193,18 +193,6 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                 rows={2}
                 className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
               />
-            </div>
-          </div>
-
-          {/* Database Health Badge */}
-          <div className="bg-slate-900/80 border border-blue-500/5 rounded-2xl p-4 flex items-start gap-3">
-            <Database className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-xs font-bold text-white block">System Storage</span>
-              <span className="text-[10px] text-slate-500 leading-relaxed block mt-0.5">
-                Connected to <strong className="text-blue-400">Local JSON DB</strong>. 
-                Deploy directly with <strong className="text-blue-400">MONGODB_URI</strong> in env variables to sync to MongoDB Atlas on Render.
-              </span>
             </div>
           </div>
 
