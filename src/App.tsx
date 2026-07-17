@@ -127,6 +127,26 @@ export default function App() {
     }
   }, [currentUser]);
 
+  // Keep activeChat updated when chats array changes (e.g. metadata updates)
+  useEffect(() => {
+    if (activeChat) {
+      const updatedChat = chats.find(c => c.id === activeChat.id);
+      if (updatedChat) {
+        if (
+          updatedChat.name !== activeChat.name ||
+          updatedChat.description !== activeChat.description ||
+          updatedChat.avatarUrl !== activeChat.avatarUrl ||
+          updatedChat.participants?.length !== activeChat.participants?.length ||
+          updatedChat.admins?.length !== activeChat.admins?.length ||
+          JSON.stringify(updatedChat.participants?.map((p: any) => p.id)) !== JSON.stringify(activeChat.participants?.map((p: any) => p.id)) ||
+          JSON.stringify(updatedChat.admins) !== JSON.stringify(activeChat.admins)
+        ) {
+          setActiveChat(updatedChat);
+        }
+      }
+    }
+  }, [chats, activeChat]);
+
   // 3. Socket connection management
   useEffect(() => {
     if (!currentUser || !token) {
@@ -186,6 +206,10 @@ export default function App() {
 
     // Receive live messages
     socket.on("new_message", (message: Message) => {
+      if (message.senderId === "000000000000000000000000") {
+        fetchChats();
+      }
+
       if (currentUser && message.senderId !== currentUser.id) {
         playNotificationSound("incoming");
       }
@@ -390,6 +414,10 @@ export default function App() {
         const savedMsg = await response.json();
         
         playNotificationSound("outgoing");
+
+        if (savedMsg.senderId === "000000000000000000000000") {
+          fetchChats();
+        }
         
         // Optimistic / Direct update to messages list (duplicate checks are run in Socket listener)
         setMessages((prev) => {

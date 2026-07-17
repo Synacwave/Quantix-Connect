@@ -5,7 +5,7 @@ import {
   ArrowLeft, Download, Image as ImageIcon, Volume2, 
   Play, Pause, Pin, Info, File, AlertCircle, X, StopCircle,
   MessageSquare, Users, Crown, LogOut, Star, CornerUpLeft, 
-  Flame, BarChart2, Plus, SmilePlus, ChevronRight
+  Flame, BarChart2, Plus, SmilePlus, ChevronRight, Edit2, ShieldAlert, UserPlus
 } from "lucide-react";
 import { User, Chat, Message } from "../types";
 import ProfileModal from "./ProfileModal";
@@ -48,6 +48,81 @@ export default function ChatView({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  
+  // Group editing state variables
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [editedDesc, setEditedDesc] = useState("");
+  const [isEditingPic, setIsEditingPic] = useState(false);
+  const [editedPic, setEditedPic] = useState("");
+  const [addUsername, setAddUsername] = useState("");
+  const [groupActionError, setGroupActionError] = useState("");
+  const [groupActionSuccess, setGroupActionSuccess] = useState("");
+
+  useEffect(() => {
+    if (activeChat && activeChat.isGroup) {
+      setEditedName(activeChat.name || "");
+      setEditedDesc(activeChat.description || "");
+      setEditedPic(activeChat.avatarUrl || "");
+      setAddUsername("");
+      setGroupActionError("");
+      setGroupActionSuccess("");
+      setIsEditingName(false);
+      setIsEditingDesc(false);
+      setIsEditingPic(false);
+    }
+  }, [activeChat, showGroupInfo]);
+
+  const handleSaveGroupName = () => {
+    if (!editedName.trim()) {
+      setGroupActionError("Group name cannot be empty.");
+      return;
+    }
+    setGroupActionError("");
+    onSendMessage(`/name ${editedName.trim()}`);
+    setIsEditingName(false);
+    setGroupActionSuccess("Group renamed successfully.");
+    setTimeout(() => setGroupActionSuccess(""), 3000);
+  };
+
+  const handleSaveGroupDesc = () => {
+    setGroupActionError("");
+    onSendMessage(`/desc ${editedDesc.trim()}`);
+    setIsEditingDesc(false);
+    setGroupActionSuccess("Group description updated.");
+    setTimeout(() => setGroupActionSuccess(""), 3000);
+  };
+
+  const handleSaveGroupPic = () => {
+    if (!editedPic.trim()) {
+      setGroupActionError("Avatar URL cannot be empty.");
+      return;
+    }
+    setGroupActionError("");
+    onSendMessage(`/pic ${editedPic.trim()}`);
+    setIsEditingPic(false);
+    setGroupActionSuccess("Group picture updated.");
+    setTimeout(() => setGroupActionSuccess(""), 3000);
+  };
+
+  const handleAddParticipant = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addUsername.trim()) return;
+    setGroupActionError("");
+    const cleanUsername = addUsername.trim().replace(/^@/, "");
+    onSendMessage(`/add ${cleanUsername}`);
+    setAddUsername("");
+    setGroupActionSuccess(`Added @${cleanUsername} to the group.`);
+    setTimeout(() => setGroupActionSuccess(""), 3000);
+  };
+
+  const handleParticipantAction = (action: "kick" | "promote" | "demote", username: string) => {
+    setGroupActionError("");
+    onSendMessage(`/${action} ${username}`);
+    setGroupActionSuccess(`Action "${action}" performed successfully on @${username}.`);
+    setTimeout(() => setGroupActionSuccess(""), 3000);
+  };
   
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -1222,259 +1297,439 @@ export default function ChatView({
           </AnimatePresence>
 
           {/* Main Action Line */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             
-            {/* File/Attachment Clip Button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="p-2 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-blue-400 transition shrink-0 cursor-pointer"
-              title="Attach file"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              className="hidden" 
-            />
+            {/* Toolbar Buttons */}
+            <div className="flex items-center gap-1 shrink-0 justify-start">
+              {/* File/Attachment Clip Button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="p-2 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-blue-400 transition shrink-0 cursor-pointer"
+                title="Attach file"
+              >
+                <Paperclip className="w-4 h-4" />
+              </button>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                className="hidden" 
+              />
 
-            {/* Create Poll Trigger Button (WhatsApp style) */}
-            <button
-              onClick={() => setShowPollCreator(!showPollCreator)}
-              className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showPollCreator ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
-              title="Create Interactive Poll"
-            >
-              <BarChart2 className="w-4 h-4" />
-            </button>
+              {/* Create Poll Trigger Button (WhatsApp style) */}
+              <button
+                onClick={() => setShowPollCreator(!showPollCreator)}
+                className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showPollCreator ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
+                title="Create Interactive Poll"
+              >
+                <BarChart2 className="w-4 h-4" />
+              </button>
 
-            {/* Self Destruct Countdown Disappearing Message Trigger (Telegram style) */}
-            <button
-              onClick={() => {
-                // Rotate timer list: Off -> 5s -> 10s -> 30s -> Off
-                let next = 0;
-                if (selfDestructTimer === 0) next = 5;
-                else if (selfDestructTimer === 5) next = 10;
-                else if (selfDestructTimer === 10) next = 30;
-                setSelfDestructTimer(next);
-              }}
-              className={`p-2 rounded-xl transition shrink-0 cursor-pointer relative flex items-center gap-1 ${
-                selfDestructTimer > 0 
-                  ? "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20" 
-                  : "text-slate-400 hover:bg-slate-900 hover:text-white"
-              }`}
-              title={`Disappearing Message Timer: ${selfDestructTimer > 0 ? `${selfDestructTimer}s` : "Off"}`}
-            >
-              <Flame className={`w-4 h-4 ${selfDestructTimer > 0 ? "text-red-500 animate-pulse" : ""}`} />
-              {selfDestructTimer > 0 && <span className="text-[9px] font-mono font-extrabold">{selfDestructTimer}s</span>}
-            </button>
+              {/* Self Destruct Countdown Disappearing Message Trigger (Telegram style) */}
+              <button
+                onClick={() => {
+                  // Rotate timer list: Off -> 5s -> 10s -> 30s -> Off
+                  let next = 0;
+                  if (selfDestructTimer === 0) next = 5;
+                  else if (selfDestructTimer === 5) next = 10;
+                  else if (selfDestructTimer === 10) next = 30;
+                  setSelfDestructTimer(next);
+                }}
+                className={`p-2 rounded-xl transition shrink-0 cursor-pointer relative flex items-center gap-1 ${
+                  selfDestructTimer > 0 
+                    ? "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20" 
+                    : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                }`}
+                title={`Disappearing Message Timer: ${selfDestructTimer > 0 ? `${selfDestructTimer}s` : "Off"}`}
+              >
+                <Flame className={`w-4 h-4 ${selfDestructTimer > 0 ? "text-red-500 animate-pulse" : ""}`} />
+                {selfDestructTimer > 0 && <span className="text-[9px] font-mono font-extrabold">{selfDestructTimer}s</span>}
+              </button>
 
-            {/* Emoji Toggle button */}
-            <button
-              onClick={() => setShowEmojis(!showEmojis)}
-              className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showEmojis ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
-              title="Insert emoji"
-            >
-              <Smile className="w-4 h-4" />
-            </button>
+              {/* Emoji Toggle button */}
+              <button
+                onClick={() => setShowEmojis(!showEmojis)}
+                className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showEmojis ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
+                title="Insert emoji"
+              >
+                <Smile className="w-4 h-4" />
+              </button>
+            </div>
 
             {/* Input text / Recording state switcher */}
-            {isRecording ? (
-              // RECORDING PULSING STATE PANEL
-              <div className="flex-1 bg-slate-900 border border-red-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping shrink-0"></span>
-                  <span className="text-red-400 font-bold shrink-0">Recording Voice</span>
-                  <span className="text-slate-500 font-mono font-medium ml-1 shrink-0">{formatRecordTime(recordingTime)}</span>
+            <div className="flex-1 min-w-0 w-full">
+              {isRecording ? (
+                // RECORDING PULSING STATE PANEL
+                <div className="bg-slate-900 border border-red-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs w-full">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping shrink-0"></span>
+                    <span className="text-red-400 font-bold shrink-0">Recording Voice</span>
+                    <span className="text-slate-500 font-mono font-medium ml-1 shrink-0">{formatRecordTime(recordingTime)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      type="button"
+                      onClick={cancelRecording}
+                      className="px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg hover:text-white hover:bg-slate-700 transition cursor-pointer text-[9px] font-bold uppercase tracking-wider"
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={stopRecording}
+                      className="px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition cursor-pointer text-[9px] font-bold uppercase tracking-wider flex items-center gap-1"
+                    >
+                      <StopCircle className="w-3.5 h-3.5" />
+                      <span>Send</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    type="button"
-                    onClick={cancelRecording}
-                    className="px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg hover:text-white hover:bg-slate-700 transition cursor-pointer text-[9px] font-bold uppercase tracking-wider"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={stopRecording}
-                    className="px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition cursor-pointer text-[9px] font-bold uppercase tracking-wider flex items-center gap-1"
-                  >
-                    <StopCircle className="w-3.5 h-3.5" />
-                    <span>Send</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              // REGULAR INPUT FORM
-              <form onSubmit={handleSendText} className="flex-1 flex gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={inputText}
-                  onChange={handleInputChange}
-                  placeholder={uploading ? "Uploading media..." : "Write a message..."}
-                  disabled={uploading}
-                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all"
-                />
-
-                {inputText.trim() ? (
-                  // SEND TEXT BUTTON
-                  <button
-                    type="submit"
-                    className="p-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer flex items-center justify-center"
-                    title="Send message"
-                  >
-                    <Send className="w-4 h-4 fill-white" />
-                  </button>
-                ) : (
-                  // VOICE RECORD MIC BUTTON
-                  <button
-                    type="button"
-                    onClick={startRecording}
+              ) : (
+                // REGULAR INPUT FORM
+                <form onSubmit={handleSendText} className="flex gap-2 w-full">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputText}
+                    onChange={handleInputChange}
+                    placeholder={uploading ? "Uploading media..." : "Write a message..."}
                     disabled={uploading}
-                    className="p-2 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-red-400 transition shrink-0 cursor-pointer"
-                    title="Record voice message"
-                  >
-                    <Mic className="w-4 h-4" />
-                  </button>
-                )}
-              </form>
-            )}
+                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all min-w-0"
+                  />
+
+                  {inputText.trim() ? (
+                    // SEND TEXT BUTTON
+                    <button
+                      type="submit"
+                      className="p-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer flex items-center justify-center"
+                      title="Send message"
+                    >
+                      <Send className="w-4 h-4 fill-white" />
+                    </button>
+                  ) : (
+                    // VOICE RECORD MIC BUTTON
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      disabled={uploading}
+                      className="p-2 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-red-400 transition shrink-0 cursor-pointer"
+                      title="Record voice message"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                  )}
+                </form>
+              )}
+            </div>
 
           </div>
         </div>
       </div>
 
       {/* Group Info Right Sidebar */}
-      {showGroupInfo && activeChat.isGroup && (
-        <div className="w-full md:w-80 border-l border-blue-500/10 bg-slate-950 flex flex-col h-full animate-fade-in shrink-0 absolute md:relative right-0 top-0 z-20">
-          {/* Header */}
-          <div className="p-4 border-b border-blue-500/10 flex items-center justify-between bg-slate-900/20">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="font-extrabold text-xs text-white uppercase tracking-wider">Group Protocol Details</span>
+      {showGroupInfo && activeChat.isGroup && (() => {
+        const isCurrentUserAdmin = activeChat.admins?.includes(currentUser.id);
+        return (
+          <div className="w-full md:w-80 border-l border-blue-500/10 bg-slate-950 flex flex-col h-full animate-fade-in shrink-0 absolute md:relative right-0 top-0 z-20">
+            {/* Header */}
+            <div className="p-4 border-b border-blue-500/10 flex items-center justify-between bg-slate-900/20">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500" />
+                <span className="font-extrabold text-xs text-white uppercase tracking-wider">Group Details</span>
+              </div>
+              <button 
+                onClick={() => setShowGroupInfo(false)}
+                className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button 
-              onClick={() => setShowGroupInfo(false)}
-              className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-5 scrollbar-thin">
-            {/* Group Card */}
-            <div className="flex flex-col items-center text-center space-y-3 p-4 bg-slate-900/30 rounded-2xl border border-blue-500/5">
-              <div className="relative">
-                {activeChat.avatarUrl ? (
-                  <img src={activeChat.avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover border border-blue-500/20" referrerPolicy="no-referrer" />
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+              
+              {/* Notifications */}
+              {groupActionError && (
+                <div className="p-2.5 bg-red-950/40 border border-red-500/20 text-red-400 text-[11px] rounded-xl flex items-center gap-2 animate-fade-in">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-400" />
+                  <span className="flex-1">{groupActionError}</span>
+                  <button onClick={() => setGroupActionError("")} className="text-slate-500 hover:text-white text-xs">×</button>
+                </div>
+              )}
+
+              {groupActionSuccess && (
+                <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[11px] rounded-xl flex items-center gap-2 animate-fade-in">
+                  <Check className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                  <span className="flex-1">{groupActionSuccess}</span>
+                  <button onClick={() => setGroupActionSuccess("")} className="text-slate-500 hover:text-white text-xs">×</button>
+                </div>
+              )}
+
+              {/* Group Card / Avatar section */}
+              <div className="flex flex-col items-center text-center space-y-3 p-4 bg-slate-900/30 rounded-2xl border border-blue-500/5 relative">
+                <div className="relative group">
+                  {activeChat.avatarUrl ? (
+                    <img src={activeChat.avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover border border-blue-500/20" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-950 to-blue-950 border border-blue-500/20 flex items-center justify-center shadow-lg">
+                      <Users className="w-8 h-8 text-blue-400" />
+                    </div>
+                  )}
+                  
+                  {isCurrentUserAdmin && (
+                    <button
+                      onClick={() => setIsEditingPic(!isEditingPic)}
+                      className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg transition active:scale-90 cursor-pointer"
+                      title="Change Avatar"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Edit Pic Input Form */}
+                {isEditingPic && (
+                  <div className="w-full space-y-2 mt-2 pt-2 border-t border-slate-800/50">
+                    <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block text-left">New Avatar URL</span>
+                    <div className="flex gap-1">
+                      <input
+                        type="text"
+                        value={editedPic}
+                        onChange={(e) => setEditedPic(e.target.value)}
+                        placeholder="https://..."
+                        className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                      />
+                      <button
+                        onClick={handleSaveGroupPic}
+                        className="p-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setIsEditingPic(false)}
+                        className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Group Name Display or Input */}
+                <div className="w-full">
+                  {isEditingName ? (
+                    <div className="flex gap-1 items-center justify-center mt-1">
+                      <input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        className="bg-slate-950 border border-slate-850 rounded-lg px-2 py-1 text-xs text-center font-bold text-white focus:outline-none focus:border-blue-500 w-4/5"
+                      />
+                      <button
+                        onClick={handleSaveGroupName}
+                        className="p-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setIsEditingName(false)}
+                        className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                      <h4 className="text-sm font-extrabold text-white tracking-tight">{activeChat.name || "Secure Group"}</h4>
+                      {isCurrentUserAdmin && (
+                        <button
+                          onClick={() => setIsEditingName(true)}
+                          className="text-slate-500 hover:text-white transition p-0.5 rounded hover:bg-slate-900"
+                          title="Edit Name"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-500 font-mono mt-1">Chat ID: {activeChat.id.slice(-8).toUpperCase()}</p>
+                </div>
+              </div>
+
+              {/* Description section */}
+              <div className="space-y-1.5 bg-slate-900/10 border border-slate-900/50 p-3 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Channel Description</span>
+                  {isCurrentUserAdmin && !isEditingDesc && (
+                    <button
+                      onClick={() => setIsEditingDesc(true)}
+                      className="text-slate-500 hover:text-white transition p-0.5 rounded hover:bg-slate-900"
+                      title="Edit Description"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+                
+                {isEditingDesc ? (
+                  <div className="space-y-1.5 pt-1">
+                    <textarea
+                      value={editedDesc}
+                      onChange={(e) => setEditedDesc(e.target.value)}
+                      rows={2}
+                      placeholder="Enter description..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                    />
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={handleSaveGroupDesc}
+                        className="px-2 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+                      >
+                        <Check className="w-3 h-3" />
+                        <span>Save</span>
+                      </button>
+                      <button
+                        onClick={() => setIsEditingDesc(false)}
+                        className="px-2 py-1 bg-slate-800 text-slate-400 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" />
+                        <span>Cancel</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-950 to-blue-950 border border-blue-500/20 flex items-center justify-center shadow-lg">
-                    <Users className="w-8 h-8 text-blue-400 animate-pulse" />
+                  <div className="text-xs text-slate-300 leading-relaxed font-normal">
+                    {activeChat.description || "No description provided for this channel."}
                   </div>
                 )}
               </div>
-              <div>
-                <h4 className="text-sm font-extrabold text-white tracking-tight">{activeChat.name || "Secure Group"}</h4>
-                <p className="text-[10px] text-slate-500 font-mono mt-1">Chat ID: {activeChat.id.slice(-8).toUpperCase()}</p>
-              </div>
-            </div>
 
-            {/* Description */}
-            <div className="space-y-1.5">
-              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Channel Description</span>
-              <div className="bg-slate-900/20 border border-slate-800/40 p-3 rounded-xl text-xs text-slate-300 leading-relaxed">
-                {activeChat.description || "No description provided for this channel. Type /desc <text> to set one."}
-              </div>
-            </div>
+              {/* Add Participant Section (Admin-only) */}
+              {isCurrentUserAdmin && (
+                <div className="space-y-2 bg-slate-900/10 border border-slate-900/50 p-3 rounded-2xl">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                    <UserPlus className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Add Group Member</span>
+                  </span>
+                  <form onSubmit={handleAddParticipant} className="flex gap-1.5">
+                    <input
+                      type="text"
+                      value={addUsername}
+                      onChange={(e) => setAddUsername(e.target.value)}
+                      placeholder="Enter username..."
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!addUsername.trim()}
+                      className="px-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition cursor-pointer shrink-0 flex items-center justify-center"
+                      title="Add user"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
+              )}
 
-            {/* Participants List */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Participants ({activeChat.participants?.length || 0})</span>
-              </div>
-              
-              <div className="space-y-2 max-h-56 overflow-y-auto scrollbar-thin">
-                {activeChat.participants?.map(user => {
-                  const isAdmin = activeChat.admins?.includes(user.id);
-                  const isMe = user.id === currentUser.id;
+              {/* Participants List */}
+              <div className="space-y-2">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block">Participants ({activeChat.participants?.length || 0})</span>
+                
+                <div className="space-y-1.5 max-h-56 overflow-y-auto scrollbar-thin">
+                  {activeChat.participants?.map(user => {
+                    const isAdmin = activeChat.admins?.includes(user.id);
+                    const isMe = user.id === currentUser.id;
 
-                  return (
-                    <div key={user.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-slate-900/50 hover:bg-slate-900/40 transition">
-                      <button
-                        onClick={() => setSelectedProfileUser(user)}
-                        className="flex items-center gap-2 min-w-0 text-left cursor-pointer hover:opacity-80 active:scale-98 transition flex-1"
-                      >
-                        <div className="relative shrink-0">
-                          {user.avatarUrl ? (
-                            <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-400">
-                              {user.displayName.charAt(0)}
+                    return (
+                      <div key={user.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-slate-900/50 hover:bg-slate-900/40 transition">
+                        <button
+                          onClick={() => setSelectedProfileUser(user)}
+                          className="flex items-center gap-2 min-w-0 text-left cursor-pointer hover:opacity-80 active:scale-98 transition flex-1"
+                        >
+                          <div className="relative shrink-0">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-400">
+                                {user.displayName.charAt(0)}
+                              </div>
+                            )}
+                            {user.status === "online" && (
+                              <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-slate-950 rounded-full"></span>
+                            )}
+                          </div>
+                          <div className="min-w-0 leading-none">
+                            <span className="text-[11px] font-bold text-white block truncate">
+                              {user.displayName} {isMe && <span className="text-[9px] text-slate-500 font-normal">(You)</span>}
+                            </span>
+                            <span className="text-[9px] text-slate-500 font-mono">@{user.username}</span>
+                          </div>
+                        </button>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isAdmin && (
+                            <Crown className="w-3.5 h-3.5 text-amber-500" title="Group Administrator" />
+                          )}
+                          
+                          {/* Admin actions if current user is an Admin and this is not myself */}
+                          {isCurrentUserAdmin && !isMe && (
+                            <div className="flex items-center gap-1 ml-2 border-l border-slate-800 pl-1.5">
+                              {isAdmin ? (
+                                <button
+                                  onClick={() => handleParticipantAction("demote", user.username)}
+                                  className="p-1 text-slate-500 hover:text-amber-500 hover:bg-slate-900 rounded transition cursor-pointer"
+                                  title="Demote Admin"
+                                >
+                                  <X className="w-3.5 h-3.5 text-red-400" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleParticipantAction("promote", user.username)}
+                                  className="p-1 text-slate-500 hover:text-amber-500 hover:bg-slate-900 rounded transition cursor-pointer"
+                                  title="Promote to Admin"
+                                >
+                                  <Crown className="w-3.5 h-3.5 text-slate-500 hover:text-amber-450" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to kick ${user.displayName}?`)) {
+                                    handleParticipantAction("kick", user.username);
+                                  }
+                                }}
+                                className="p-1 text-slate-500 hover:text-red-400 hover:bg-slate-900 rounded transition cursor-pointer"
+                                title="Kick from Group"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             </div>
                           )}
-                          {user.status === "online" && (
-                            <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-slate-950 rounded-full"></span>
-                          )}
                         </div>
-                        <div className="min-w-0 leading-none">
-                          <span className="text-[11px] font-bold text-white block truncate">
-                            {user.displayName} {isMe && <span className="text-[9px] text-slate-500 font-normal">(You)</span>}
-                          </span>
-                          <span className="text-[9px] text-slate-500 font-mono">@{user.username}</span>
-                        </div>
-                      </button>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        {isAdmin && (
-                          <Crown className="w-3 h-3 text-amber-500 animate-pulse" title="Group Administrator" />
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Leave Group Button */}
+              <button
+                onClick={() => {
+                  if (confirm("Are you sure you want to leave this group chat?")) {
+                    onSendMessage("/leave");
+                    setShowGroupInfo(false);
+                  }
+                }}
+                className="w-full py-2 bg-red-950/30 hover:bg-red-950/50 border border-red-500/20 text-red-400 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Depart Group Chat</span>
+              </button>
+
             </div>
-
-            {/* Admin Quick Guide & Help */}
-            <div className="space-y-1.5 p-3 rounded-xl border border-slate-800/80 bg-slate-900/10">
-              <span className="text-[9px] font-mono uppercase tracking-wider text-blue-400 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>Interactive Protocol Commands</span>
-              </span>
-              <div className="text-[10px] text-slate-400 space-y-1 leading-relaxed font-mono">
-                <p className="text-[9px] text-slate-500 border-b border-slate-800 pb-1 mb-1">Type in the message bar to trigger:</p>
-                <p><span className="text-blue-400">/name &lt;text&gt;</span> - Change group name</p>
-                <p><span className="text-blue-400">/desc &lt;text&gt;</span> - Change description</p>
-                <p><span className="text-blue-400">/pic &lt;url&gt;</span> - Set group avatar URL</p>
-                <p><span className="text-blue-400">/add @username</span> - Add participant</p>
-                <p><span className="text-blue-400">/kick @username</span> - Kick participant</p>
-                <p><span className="text-blue-400">/promote @username</span> - Make admin</p>
-                <p><span className="text-blue-400">/demote @username</span> - Demote admin</p>
-                <p><span className="text-blue-400">/leave</span> - Depart group chat</p>
-              </div>
-            </div>
-
-            {/* Leave Group Button */}
-            <button
-              onClick={() => {
-                if (confirm("Are you sure you want to leave this group chat?")) {
-                  onSendMessage("/leave");
-                  setShowGroupInfo(false);
-                }
-              }}
-              className="w-full py-2 bg-red-950/30 hover:bg-red-950/50 border border-red-500/20 text-red-400 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Depart Group Chat</span>
-            </button>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Profile Detail Modal Layer */}
       <AnimatePresence>
