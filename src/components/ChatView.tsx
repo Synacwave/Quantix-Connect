@@ -5,7 +5,7 @@ import {
   ArrowLeft, Download, Image as ImageIcon, Volume2, 
   Play, Pause, Pin, Info, File, AlertCircle, X, StopCircle,
   MessageSquare, Users, Crown, LogOut, Star, CornerUpLeft, 
-  Flame, BarChart2, Plus, SmilePlus, ChevronRight, Edit2, ShieldAlert, UserPlus
+  Flame, BarChart2, Plus, SmilePlus, ChevronRight, Edit2, ShieldAlert, UserPlus, Upload
 } from "lucide-react";
 import { User, Chat, Message } from "../types";
 import ProfileModal from "./ProfileModal";
@@ -136,6 +136,8 @@ export default function ChatView({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const groupPicInputRef = useRef<HTMLInputElement>(null);
+  const [groupPicUploading, setGroupPicUploading] = useState(false);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const partner = activeChat.otherParticipant;
@@ -357,6 +359,49 @@ export default function ChatView({
         setError("Failed to upload attachment. Please try again.");
       } finally {
         setUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleGroupPicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      setGroupActionError("Image files must be under 15MB.");
+      return;
+    }
+
+    setGroupPicUploading(true);
+    setGroupActionError("");
+    setGroupActionSuccess("");
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify({ fileData: base64Data })
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+
+        setEditedPic(data.url);
+        onSendMessage(`/pic ${data.url}`);
+        setIsEditingPic(false);
+        setGroupActionSuccess("Group profile picture updated successfully from your device!");
+        setTimeout(() => setGroupActionSuccess(""), 4000);
+      } catch (err) {
+        setGroupActionError("Failed to upload image. Please try again.");
+      } finally {
+        setGroupPicUploading(false);
       }
     };
     reader.readAsDataURL(file);
@@ -1490,28 +1535,58 @@ export default function ChatView({
 
                 {/* Edit Pic Input Form */}
                 {isEditingPic && (
-                  <div className="w-full space-y-2 mt-2 pt-2 border-t border-slate-800/50">
-                    <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block text-left">New Avatar URL</span>
-                    <div className="flex gap-1">
+                  <div className="w-full space-y-2.5 mt-2 pt-2 border-t border-slate-800/50 text-left">
+                    <div>
+                      <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block mb-1">Upload from Device</span>
+                      <button
+                        type="button"
+                        onClick={() => groupPicInputRef.current?.click()}
+                        disabled={groupPicUploading}
+                        className="w-full py-1.5 bg-blue-600/10 hover:bg-blue-600/20 border border-dashed border-blue-500/30 text-blue-400 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{groupPicUploading ? "Uploading..." : "Choose Image File"}</span>
+                      </button>
                       <input
-                        type="text"
-                        value={editedPic}
-                        onChange={(e) => setEditedPic(e.target.value)}
-                        placeholder="https://..."
-                        className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                        type="file"
+                        ref={groupPicInputRef}
+                        onChange={handleGroupPicUpload}
+                        accept="image/*"
+                        className="hidden"
                       />
-                      <button
-                        onClick={handleSaveGroupPic}
-                        className="p-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setIsEditingPic(false)}
-                        className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                    </div>
+
+                    <div className="relative flex py-1 items-center">
+                      <div className="flex-grow border-t border-slate-800/40"></div>
+                      <span className="flex-shrink mx-2 text-[8px] font-mono text-slate-600 uppercase">Or Enter Link</span>
+                      <div className="flex-grow border-t border-slate-800/40"></div>
+                    </div>
+
+                    <div>
+                      <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block mb-1">Avatar Image URL</span>
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={editedPic}
+                          onChange={(e) => setEditedPic(e.target.value)}
+                          placeholder="https://..."
+                          className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                          onClick={handleSaveGroupPic}
+                          className="p-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition shrink-0"
+                          title="Save Link"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setIsEditingPic(false)}
+                          className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition shrink-0"
+                          title="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
