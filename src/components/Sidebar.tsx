@@ -282,12 +282,12 @@ export default function Sidebar({
                     key={chat.id}
                     onClick={() => onSelectChat(chat)}
                     className={`w-full p-3 rounded-xl flex items-center gap-3 transition text-left cursor-pointer relative group border ${
-                      isActive 
-                        ? isLucy
-                          ? "bg-purple-950/40 border-purple-500/50 shadow-[0_0_18px_rgba(168,85,247,0.4)] text-purple-100"
-                          : "bg-blue-600/15 border-blue-500/30 shadow-lg" 
-                        : isLucy
-                          ? "bg-purple-950/15 border-purple-500/20 hover:bg-purple-950/25 hover:border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)] text-purple-200"
+                      isLucy
+                        ? isActive 
+                          ? "bg-gradient-to-r from-purple-950/45 to-pink-950/45 border-purple-500/60 shadow-[0_0_20px_rgba(168,85,247,0.35),0_0_20px_rgba(236,72,153,0.25)] text-purple-100"
+                          : "bg-gradient-to-r from-purple-950/20 to-pink-950/20 border-purple-500/35 hover:border-pink-500/50 shadow-[0_0_12px_rgba(168,85,247,0.18),0_0_12px_rgba(236,72,153,0.15)] text-purple-200/90 hover:from-purple-950/30 hover:to-pink-950/30"
+                        : isActive 
+                          ? "bg-blue-600/15 border-blue-500/30 shadow-lg" 
                           : "hover:bg-slate-900/60 border-transparent hover:border-slate-800"
                     }`}
                   >
@@ -302,7 +302,12 @@ export default function Sidebar({
                       }}
                     >
                       {chatAvatarUrl ? (
-                        <img src={chatAvatarUrl} alt={chatName} className={`w-11 h-11 rounded-full object-cover ${isLucy ? "border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" : ""}`} />
+                        <img 
+                          src={chatAvatarUrl} 
+                          alt={chatName} 
+                          referrerPolicy="no-referrer"
+                          className={`w-11 h-11 rounded-full object-cover ${isLucy ? "border-2 border-pink-500 shadow-[0_0_12px_rgba(236,72,153,0.7)]" : ""}`} 
+                        />
                       ) : isGroup ? (
                         <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-900/40 to-blue-900/40 border border-blue-500/10 flex items-center justify-center text-blue-400 text-sm font-bold shadow-inner">
                           <Users className="w-5 h-5 text-blue-400" />
@@ -313,7 +318,7 @@ export default function Sidebar({
                         </div>
                       )}
                       {!isGroup && partner && partner.status === "online" && (
-                        <span className={`absolute bottom-0.5 right-0.5 w-3 h-3 border-2 border-slate-950 rounded-full animate-pulse ${isLucy ? "bg-purple-400" : "bg-emerald-500"}`}></span>
+                        <span className={`absolute bottom-0.5 right-0.5 w-3 h-3 border-2 border-slate-950 rounded-full animate-pulse ${isLucy ? "bg-pink-400 shadow-[0_0_8px_rgba(236,72,153,0.8)]" : "bg-emerald-500"}`}></span>
                       )}
                       {isGroup && (
                         <span className="absolute -bottom-0.5 -right-0.5 bg-blue-950 border border-blue-500/40 text-[8px] px-1 text-blue-400 rounded-md font-mono font-bold uppercase tracking-wider scale-90">

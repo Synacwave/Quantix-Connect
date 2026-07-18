@@ -728,40 +728,48 @@ export default function ChatView({
                   </div>
                 </div>
               </>
-            ) : partner ? (
-              <>
-                <button
-                  onClick={() => setSelectedProfileUser(partner)}
-                  className="relative shrink-0 cursor-pointer active:scale-95 transition"
-                >
-                  {partner.avatarUrl ? (
-                    <img src={partner.avatarUrl} alt={partner.displayName} className="w-10 h-10 rounded-full object-cover border border-blue-500/15" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-sm font-bold">
-                      {partner.displayName.charAt(0).toUpperCase()}
+            ) : partner ? (() => {
+                const isLucy = partner.id === "0000000000000000000010c1" || partner.id === "00000000000000000000lucy" || partner.username === "lucy";
+                return (
+                  <>
+                    <button
+                      onClick={() => setSelectedProfileUser(partner)}
+                      className="relative shrink-0 cursor-pointer active:scale-95 transition"
+                    >
+                      {partner.avatarUrl ? (
+                        <img 
+                          src={partner.avatarUrl} 
+                          alt={partner.displayName} 
+                          referrerPolicy="no-referrer"
+                          className={`w-10 h-10 rounded-full object-cover border ${isLucy ? "border-pink-500 shadow-[0_0_12px_rgba(236,72,153,0.7)]" : "border-blue-500/15"}`} 
+                        />
+                      ) : (
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${isLucy ? "bg-gradient-to-tr from-purple-600 to-pink-500 text-white" : "bg-blue-900/40 text-blue-400"}`}>
+                          {partner.displayName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      {partner.status === "online" && (
+                        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-slate-950 rounded-full ${isLucy ? "bg-pink-400" : "bg-emerald-500"}`}></span>
+                      )}
+                    </button>
+                    <div className="min-w-0 leading-tight">
+                      <div className={`text-xs font-extrabold truncate transition cursor-pointer ${isLucy ? "text-purple-300 hover:text-pink-400" : "text-white hover:text-blue-400"}`} onClick={() => setSelectedProfileUser(partner)}>{partner.displayName}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium flex items-center gap-1.5">
+                        {partner.status === "online" ? (
+                          <span className={isLucy ? "text-pink-400 font-bold" : "text-emerald-500 font-bold"}>online</span>
+                        ) : (
+                          <span>offline</span>
+                        )}
+                        {partner.customStatus && (
+                          <span className={`${isLucy ? "text-pink-300/80 border-purple-900" : "text-blue-400 border-slate-800"} border-l pl-1.5 italic font-semibold truncate max-w-[120px]`}>
+                            {partner.customStatus}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  {partner.status === "online" && (
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
-                  )}
-                </button>
-                <div className="min-w-0 leading-tight">
-                  <div className="text-xs font-extrabold text-white truncate hover:text-blue-400 transition cursor-pointer" onClick={() => setSelectedProfileUser(partner)}>{partner.displayName}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium flex items-center gap-1.5">
-                    {partner.status === "online" ? (
-                      <span className="text-emerald-500 font-bold">online</span>
-                    ) : (
-                      <span>offline</span>
-                    )}
-                    {partner.customStatus && (
-                      <span className="text-blue-400 border-l border-slate-800 pl-1.5 italic font-semibold truncate max-w-[120px]">
-                        {partner.customStatus}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : null}
+                  </>
+                );
+              })() : null}
           </div>
 
           {/* Header Actions */}
