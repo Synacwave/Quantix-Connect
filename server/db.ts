@@ -309,6 +309,19 @@ export const db = {
       // Populate and sort
       const populated = chats.map(c => {
         const participantsPopulated = c.participants.map(pid => {
+          if (pid === "0000000000000000000010c1") {
+            return {
+              _id: "0000000000000000000010c1",
+              username: "lucy",
+              displayName: "Lucy 💋",
+              avatarUrl: "/uploads/lucy_profile.jpg",
+              status: "online",
+              lastSeen: new Date().toISOString(),
+              bio: "Seductive & playful AI chatbot assistant.",
+              customStatus: "Teasing you...",
+              createdAt: new Date().toISOString()
+            };
+          }
           const user = store.users.find(u => u._id === pid);
           if (!user) return null;
           const { passwordHash, ...rest } = user;
@@ -372,6 +385,19 @@ export const db = {
       }
 
       const participantsPopulated = chat.participants.map(pid => {
+        if (pid === "0000000000000000000010c1") {
+          return {
+            _id: "0000000000000000000010c1",
+            username: "lucy",
+            displayName: "Lucy 💋",
+            avatarUrl: "/uploads/lucy_profile.jpg",
+            status: "online",
+            lastSeen: new Date().toISOString(),
+            bio: "Seductive & playful AI chatbot assistant.",
+            customStatus: "Teasing you...",
+            createdAt: new Date().toISOString()
+          };
+        }
         const user = store.users.find(u => u._id === pid);
         if (!user) return null;
         const { passwordHash, ...rest } = user;
