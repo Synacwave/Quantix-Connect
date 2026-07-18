@@ -5,7 +5,7 @@ import {
   ArrowLeft, Download, Image as ImageIcon, Volume2, 
   Play, Pause, Pin, Info, File, AlertCircle, X, StopCircle,
   MessageSquare, Users, Crown, LogOut, Star, CornerUpLeft, 
-  Flame, BarChart2, Plus, SmilePlus, ChevronRight, Edit2, ShieldAlert, UserPlus, Upload
+  Flame, BarChart2, Plus, SmilePlus, ChevronRight, Edit2, ShieldAlert, UserPlus, Upload, Heart
 } from "lucide-react";
 import { User, Chat, Message } from "../types";
 import ProfileModal from "./ProfileModal";
@@ -44,6 +44,36 @@ export default function ChatView({
   onTogglePin
 }: ChatViewProps) {
   const [inputText, setInputText] = useState("");
+  const [isLucyEnabled, setIsLucyEnabled] = useState(!!activeChat.lucyEnabled);
+
+  useEffect(() => {
+    setIsLucyEnabled(!!activeChat.lucyEnabled);
+  }, [activeChat.id, activeChat.lucyEnabled]);
+
+  const handleToggleLucy = async () => {
+    try {
+      const nextEnabled = !isLucyEnabled;
+      setIsLucyEnabled(nextEnabled);
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/chats/${activeChat.id}/lucy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ enabled: nextEnabled })
+      });
+
+      if (!res.ok) {
+        setIsLucyEnabled(!nextEnabled);
+      } else {
+        activeChat.lucyEnabled = nextEnabled;
+      }
+    } catch (err) {
+      setIsLucyEnabled(isLucyEnabled);
+    }
+  };
   const [showEmojis, setShowEmojis] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -766,6 +796,20 @@ export default function ChatView({
 
           {/* Header Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            {/* Lucy AI Mode Toggle Button */}
+            <button
+              onClick={handleToggleLucy}
+              className={`px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 border ${
+                isLucyEnabled 
+                  ? "bg-pink-500/10 border-pink-500/30 text-pink-400 hover:bg-pink-500/20 shadow-[0_0_10px_rgba(236,72,153,0.15)] animate-pulse" 
+                  : "bg-slate-950/40 border-slate-900 text-slate-500 hover:bg-slate-900 hover:text-slate-300"
+              }`}
+              title={isLucyEnabled ? "Disable Seductive Lucy AI Bot" : "Enable Seductive Lucy AI Bot"}
+            >
+              <Heart className={`w-3.5 h-3.5 ${isLucyEnabled ? "fill-pink-500 text-pink-500" : ""}`} />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">Lucy AI</span>
+            </button>
+
             {/* Starred Messages Toggle Button */}
             <button
               onClick={() => setStarredOnlyFilter(!starredOnlyFilter)}
@@ -944,9 +988,11 @@ export default function ChatView({
                     <div className={`relative w-full rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition ${
                       isSelf 
                         ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
-                        : isTaggedMe
-                          ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
-                          : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
+                        : msg.senderId === "00000000000000000000lucy"
+                          ? "bg-pink-950/20 border-pink-500/30 text-pink-100 rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]"
+                          : isTaggedMe
+                            ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
+                            : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
                     }`}>
                       
                       {/* Replying Block (Quoted Reply) */}
@@ -965,9 +1011,17 @@ export default function ChatView({
                       )}
 
                       {/* Group Sender Name Header */}
-                      {activeChat.isGroup && !isSelf && (
+                      {activeChat.isGroup && !isSelf && msg.senderId !== "00000000000000000000lucy" && (
                         <span className="text-[10px] font-extrabold text-blue-400 mb-0.5 block">
                           {senderUser?.displayName || `User @${msg.senderId.slice(-4)}`}
+                        </span>
+                      )}
+
+                      {/* Lucy Sender Name Header */}
+                      {msg.senderId === "00000000000000000000lucy" && (
+                        <span className="text-[10px] font-extrabold text-pink-400 mb-0.5 block flex items-center gap-1.5 select-none">
+                          <span>Lucy 💋</span>
+                          <span className="bg-pink-500/25 text-pink-300 text-[8px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold">AI Bot</span>
                         </span>
                       )}
 
@@ -1140,6 +1194,25 @@ export default function ChatView({
                   <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
                   <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                   <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Lucy typing indicator */}
+          {typingUsers["00000000000000000000lucy"] && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="bg-pink-950/20 border border-pink-500/20 rounded-2xl px-4 py-2.5 text-pink-400 text-[10px] flex items-center gap-1.5 font-medium shadow-sm">
+                <span className="font-bold text-pink-300">Lucy 💋</span>
+                <span>is typing something incredibly teasing...</span>
+                <span className="flex gap-0.5 ml-0.5 mt-1 shrink-0">
+                  <span className="w-1 h-1 bg-pink-500 rounded-full animate-bounce"></span>
+                  <span className="w-1 h-1 bg-pink-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                  <span className="w-1 h-1 bg-pink-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                 </span>
               </div>
             </motion.div>

@@ -21,6 +21,7 @@ export interface Chat {
   admins?: string[];
   participants?: User[];
   otherParticipant: User | null;
+  lucyEnabled?: boolean;
   lastMessage: {
     id: string;
     text: string;

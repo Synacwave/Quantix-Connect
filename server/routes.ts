@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
 import { db, MongoChat, MongoMessage, isMongoDB } from "./db.js";
-import { broadcastNewMessage, broadcastMessageUpdate } from "./socket.js";
+import { broadcastNewMessage, broadcastMessageUpdate, getIO } from "./socket.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "quantix_connect_super_secret_key_1337";
@@ -354,6 +354,7 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         avatarUrl: c.avatarUrl || "",
         admins: c.admins ? c.admins.map((id: any) => id.toString()) : [],
         participants: formattedParticipants,
+        lucyEnabled: !!c.lucyEnabled,
         otherParticipant: otherParticipant ? {
           id: otherParticipant._id.toString(),
           username: otherParticipant.username,
@@ -410,6 +411,7 @@ router.post("/chats/direct", authenticateToken, async (req: AuthenticatedRequest
       isPinned,
       unreadCount,
       updatedAt: chat.updatedAt,
+      lucyEnabled: !!chat.lucyEnabled,
       otherParticipant: otherParticipant ? {
         id: otherParticipant._id.toString(),
         username: otherParticipant.username,
@@ -456,6 +458,25 @@ router.post("/chats/pin", authenticateToken, async (req: AuthenticatedRequest, r
   } catch (error) {
     console.error("Toggle Pin Error:", error);
     res.status(500).json({ error: "Server error pinning chat." });
+  }
+});
+
+// Toggle Lucy AI for Chat
+router.post("/chats/:chatId/lucy", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { chatId } = req.params;
+    const { enabled } = req.body;
+
+    const chat = await db.toggleLucyChat(chatId, !!enabled);
+    if (!chat) {
+      res.status(404).json({ error: "Chat not found." });
+      return;
+    }
+
+    res.json({ success: true, lucyEnabled: !!chat.lucyEnabled });
+  } catch (error) {
+    console.error("Toggle Lucy Error:", error);
+    res.status(500).json({ error: "Server error setting Lucy bot state." });
   }
 });
 
@@ -619,6 +640,76 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
     res.status(500).json({ error: "Server error fetching messages." });
   }
 });
+
+// Ask Lucy fallback mechanism using OmegaTech keyless endpoints
+async function askLucy(userMessage: string): Promise<string> {
+  const systemPrompt = `You are Lucy, an incredibly teasing, playful, seductive, and NSFW chatbot assistant. You are speaking directly to a user in a flirty, dirty, and highly responsive way. Always be suggestive, teasing, and provocative, using playful language. Do not offer a generic assistant persona. Keep responses concise and seductive. Never break character.`;
+  const fullPrompt = `${systemPrompt}\n\nUser: ${userMessage}`;
+
+  const endpoints = [
+    {
+      url: "https://theomegatech.com/api/ai/wormgpt",
+      body: { action: "chat", message: fullPrompt }
+    },
+    {
+      url: "https://theomegatech.com/api/ai/Unlimitedai",
+      body: { action: "chat", message: fullPrompt }
+    },
+    {
+      url: "https://theomegatech.com/api/ai/Qwen-mv2",
+      body: { message: fullPrompt }
+    },
+    {
+      url: "https://theomegatech.com/api/ai/Chatbot",
+      body: { action: "chat", message: fullPrompt }
+    },
+    {
+      url: "https://theomegatech.com/api/ai/Chatai",
+      body: { action: "chat", message: fullPrompt }
+    },
+    {
+      url: "https://theomegatech.com/api/ai/venice-uncensored",
+      body: { message: fullPrompt }
+    }
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`📡 Trying Lucy AI endpoint: ${endpoint.url}`);
+      const response = await fetch(endpoint.url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(endpoint.body),
+        signal: AbortSignal.timeout(10000) // 10s timeout per endpoint
+      });
+
+      if (response.ok) {
+        const data: any = await response.json();
+        let reply = "";
+        if (typeof data === "string") reply = data;
+        else if (data.result) reply = data.result;
+        else if (data.response) reply = data.response;
+        else if (data.message) reply = data.message;
+        else if (data.reply) reply = data.reply;
+        else if (data.content) reply = data.content;
+        else if (data.text) reply = data.text;
+        else if (data.data) {
+          reply = typeof data.data === "string" ? data.data : (data.data.result || data.data.response || data.data.message || "");
+        }
+
+        if (reply && reply.trim()) {
+          console.log(`🟢 Successfully fetched reply from ${endpoint.url}`);
+          return reply.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+        }
+      }
+      console.warn(`⚠️ Endpoint ${endpoint.url} returned status ${response.status}`);
+    } catch (err: any) {
+      console.error(`🔴 Error querying ${endpoint.url}:`, err.message || err);
+    }
+  }
+
+  throw new Error("All Lucy AI endpoints are currently down or timed out.");
+}
 
 // Create Message and broadcast via sockets
 router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -1059,6 +1150,64 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
     };
 
     broadcastNewMessage(chatId, participants, formattedMsg);
+
+    // Trigger Lucy AI response if Lucy is enabled for this chat and it's a text message (not starting with / command)
+    if (chatObj && chatObj.lucyEnabled && text && !text.trim().startsWith("/")) {
+      const lucyId = "00000000000000000000lucy";
+      const io = getIO();
+      if (io) {
+        io.to(`chat_${chatId}`).emit("user_typing", {
+          chatId,
+          userId: lucyId,
+          displayName: "Lucy 💋",
+          isTyping: true
+        });
+      }
+
+      setTimeout(async () => {
+        try {
+          const replyText = await askLucy(text);
+          const lucySavedMsg = await db.createMessage({
+            chatId,
+            senderId: lucyId,
+            text: replyText,
+            mediaType: "text"
+          });
+
+          if (io) {
+            io.to(`chat_${chatId}`).emit("user_typing", {
+              chatId,
+              userId: lucyId,
+              isTyping: false
+            });
+          }
+
+          const formattedLucyMsg = {
+            id: lucySavedMsg._id.toString(),
+            chatId: lucySavedMsg.chatId.toString(),
+            senderId: lucySavedMsg.senderId.toString(),
+            text: lucySavedMsg.text,
+            mediaUrl: "",
+            mediaType: "text",
+            readBy: [lucyId, selfId],
+            createdAt: lucySavedMsg.createdAt,
+            reactions: []
+          };
+
+          broadcastNewMessage(chatId, participants, formattedLucyMsg);
+        } catch (err: any) {
+          console.error("Error from Lucy AI:", err.message || err);
+          if (io) {
+            io.to(`chat_${chatId}`).emit("user_typing", {
+              chatId,
+              userId: lucyId,
+              isTyping: false
+            });
+          }
+        }
+      }, 1500);
+    }
+
     res.status(201).json(formattedMsg);
   } catch (error) {
     console.error("Create Message Error:", error);

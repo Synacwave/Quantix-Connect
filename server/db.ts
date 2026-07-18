@@ -25,6 +25,7 @@ const ChatSchema = new mongoose.Schema({
   pinnedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
   unreadCounts: { type: Map, of: Number, default: {} },
+  lucyEnabled: { type: Boolean, default: false },
   updatedAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
@@ -106,6 +107,7 @@ interface LocalChat {
   pinnedBy: string[]; // User IDs
   lastMessage: any; // Message details or ID
   unreadCounts: Record<string, number>; // userId -> count
+  lucyEnabled: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -335,6 +337,7 @@ export const db = {
           pinnedBy: [],
           lastMessage: null,
           unreadCounts: { [userId1]: 0, [userId2]: 0 },
+          lucyEnabled: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -381,6 +384,23 @@ export const db = {
       }
       writeLocalDB(store);
       return chat;
+    }
+  },
+
+  async toggleLucyChat(chatId: string, enabled: boolean) {
+    if (isMongoDB && MongoChat) {
+      const chat = await MongoChat.findById(chatId);
+      if (!chat) return null;
+      chat.lucyEnabled = enabled;
+      await chat.save();
+      return chat;
+    } else {
+      const store = readLocalDB();
+      const idx = store.chats.findIndex(c => c._id === chatId);
+      if (idx === -1) return null;
+      store.chats[idx].lucyEnabled = enabled;
+      writeLocalDB(store);
+      return store.chats[idx];
     }
   },
 
