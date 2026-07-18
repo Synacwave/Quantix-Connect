@@ -704,21 +704,17 @@ async function askLucy(userMessage: string): Promise<string> {
   const encodedSysPrompt = encodeURIComponent(systemPrompt);
 
   const endpoints = [
-    // Primary Endpoints (GET)
-    {
-      url: `https://api-rebix.vercel.app/api/deep-ai?query=${encodedFullPrompt}`,
-      method: "GET"
-    },
+    // Primary Endpoints (GET) - Prioritizing gpt-5 and gptlogic
     {
       url: `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
       method: "GET"
     },
     {
-      url: `https://api-rebix.vercel.app/api/copilot?text=${encodedFullPrompt}`,
+      url: `https://api-rebix.vercel.app/api/gptlogic?q=${encodedUserMsg}&prompt=${encodedSysPrompt}`,
       method: "GET"
     },
     {
-      url: `https://api-rebix.vercel.app/api/gptlogic?q=${encodedUserMsg}&prompt=${encodedSysPrompt}`,
+      url: `https://api-rebix.vercel.app/api/deep-ai?query=${encodedFullPrompt}`,
       method: "GET"
     },
     // Fallback Endpoints (POST)
@@ -751,6 +747,11 @@ async function askLucy(userMessage: string): Promise<string> {
       url: "https://theomegatech.com/api/ai/venice-uncensored",
       method: "POST",
       body: { message: fullPrompt }
+    },
+    // Last Fallback Endpoint
+    {
+      url: `https://api-rebix.vercel.app/api/copilot?text=${encodedFullPrompt}`,
+      method: "GET"
     }
   ];
 

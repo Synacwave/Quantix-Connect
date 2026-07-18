@@ -1193,7 +1193,7 @@ export default function ChatView({
           )}
 
           {/* Live Typing indicator bubble */}
-          {!activeChat.isGroup && partner && partner.id !== "0000000000000000000010c1" && partner.id !== "00000000000000000000lucy" && partner.username !== "lucy" && typingUsers[partner.id] && (
+          {!activeChat.isGroup && partner && typingUsers[partner.id] && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 5 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1206,25 +1206,6 @@ export default function ChatView({
                   <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
                   <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                   <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Lucy typing indicator */}
-          {(typingUsers["00000000000000000000lucy"] || typingUsers["0000000000000000000010c1"]) && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 5 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="bg-pink-950/20 border border-pink-500/20 rounded-2xl px-4 py-2.5 text-pink-400 text-[10px] flex items-center gap-1.5 font-medium shadow-sm">
-                <span className="font-bold text-pink-300">Lucy 💋</span>
-                <span>is typing...</span>
-                <span className="flex gap-0.5 ml-0.5 mt-1 shrink-0">
-                  <span className="w-1 h-1 bg-pink-500 rounded-full animate-bounce"></span>
-                  <span className="w-1 h-1 bg-pink-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                  <span className="w-1 h-1 bg-pink-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                 </span>
               </div>
             </motion.div>
