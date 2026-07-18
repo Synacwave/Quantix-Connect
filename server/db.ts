@@ -68,8 +68,30 @@ if (isMongoDB) {
   mongoose.connect(MONGODB_URI!, {
     serverSelectionTimeoutMS: 4000, // Fail fast after 4 seconds
     connectTimeoutMS: 5000,
-  }).then(() => {
+  }).then(async () => {
     console.log("🟢 Quantix DB: Successfully connected to MongoDB Atlas!");
+    try {
+      const lucyExists = await MongoUser.findById("0000000000000000000010c1");
+      if (!lucyExists) {
+        console.log("🌸 Seeding Lucy AI user into MongoDB Atlas...");
+        const lucyUser = new MongoUser({
+          _id: "0000000000000000000010c1",
+          username: "lucy",
+          displayName: "Lucy 💋",
+          passwordHash: "lucy_ai_bot_dummy_hash_no_login",
+          avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
+          status: "online",
+          lastSeen: new Date().toISOString(),
+          bio: "Seductive & playful AI chatbot assistant.",
+          customStatus: "Teasing you...",
+          createdAt: new Date().toISOString()
+        });
+        await lucyUser.save();
+        console.log("🌸 Lucy AI user seeded successfully!");
+      }
+    } catch (seedErr: any) {
+      console.error("🔴 Failed to seed/verify Lucy AI user in MongoDB:", seedErr.message || seedErr);
+    }
   }).catch((err) => {
     console.error("🔴 Quantix DB: MongoDB connection failed, falling back to Local JSON DB:", err.message || err);
     isMongoDB = false;

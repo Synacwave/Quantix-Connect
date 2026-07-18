@@ -773,6 +773,9 @@ async function askLucy(userMessage: string): Promise<string> {
         if (contentType.includes("application/json")) {
           const data: any = await response.json();
           if (typeof data === "string") reply = data;
+          else if (data.results) {
+            reply = typeof data.results === "string" ? data.results : (data.results.text || "");
+          }
           else if (data.result) reply = data.result;
           else if (data.response) reply = data.response;
           else if (data.message) reply = data.message;
@@ -823,7 +826,9 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
     if (isMongoDB && MongoChat) {
       chatObj = await MongoChat.findById(chatId).populate("participants", "-passwordHash");
       if (chatObj) {
-        participants = chatObj.participants.map((p: any) => p._id.toString());
+        participants = chatObj.participants
+          .filter(Boolean)
+          .map((p: any) => p._id ? p._id.toString() : p.toString());
       }
     } else {
       try {
