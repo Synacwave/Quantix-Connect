@@ -182,6 +182,19 @@ function generateId() {
 export const db = {
   // --- USER METHODS ---
   async findUserById(id: string) {
+    if (id === "0000000000000000000010c1") {
+      return {
+        _id: "0000000000000000000010c1",
+        username: "lucy",
+        displayName: "Lucy 💋",
+        avatarUrl: "",
+        status: "online",
+        lastSeen: new Date().toISOString(),
+        bio: "Seductive & playful AI chatbot assistant.",
+        customStatus: "Teasing you...",
+        createdAt: new Date().toISOString()
+      };
+    }
     if (isMongoDB && MongoUser) {
       return MongoUser.findById(id).select("-passwordHash");
     } else {
@@ -195,6 +208,19 @@ export const db = {
 
   async findUserByUsername(username: string) {
     const lowerUsername = username.toLowerCase();
+    if (lowerUsername === "lucy") {
+      return {
+        _id: "0000000000000000000010c1",
+        username: "lucy",
+        displayName: "Lucy 💋",
+        avatarUrl: "",
+        status: "online",
+        lastSeen: new Date().toISOString(),
+        bio: "Seductive & playful AI chatbot assistant.",
+        customStatus: "Teasing you...",
+        createdAt: new Date().toISOString()
+      };
+    }
     if (isMongoDB && MongoUser) {
       return MongoUser.findOne({ username: lowerUsername });
     } else {

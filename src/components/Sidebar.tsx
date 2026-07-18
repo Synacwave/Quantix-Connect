@@ -275,14 +275,20 @@ export default function Sidebar({
                 const chatAvatarUrl = isGroup ? chat.avatarUrl : partner?.avatarUrl;
                 const isActive = chat.id === activeChatId;
 
+                const isLucy = !isGroup && partner && (partner.id === "0000000000000000000010c1" || partner.id === "00000000000000000000lucy" || partner.username === "lucy");
+
                 return (
                   <button
                     key={chat.id}
                     onClick={() => onSelectChat(chat)}
-                    className={`w-full p-3 rounded-xl flex items-center gap-3 transition text-left cursor-pointer relative group ${
+                    className={`w-full p-3 rounded-xl flex items-center gap-3 transition text-left cursor-pointer relative group border ${
                       isActive 
-                        ? "bg-blue-600/15 border border-blue-500/30 shadow-lg" 
-                        : "hover:bg-slate-900/60 border border-transparent hover:border-slate-800"
+                        ? isLucy
+                          ? "bg-purple-950/40 border-purple-500/50 shadow-[0_0_18px_rgba(168,85,247,0.4)] text-purple-100"
+                          : "bg-blue-600/15 border-blue-500/30 shadow-lg" 
+                        : isLucy
+                          ? "bg-purple-950/15 border-purple-500/20 hover:bg-purple-950/25 hover:border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)] text-purple-200"
+                          : "hover:bg-slate-900/60 border-transparent hover:border-slate-800"
                     }`}
                   >
                     {/* Avatar with Presence Dot */}
@@ -296,18 +302,18 @@ export default function Sidebar({
                       }}
                     >
                       {chatAvatarUrl ? (
-                        <img src={chatAvatarUrl} alt={chatName} className="w-11 h-11 rounded-full object-cover" />
+                        <img src={chatAvatarUrl} alt={chatName} className={`w-11 h-11 rounded-full object-cover ${isLucy ? "border-2 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]" : ""}`} />
                       ) : isGroup ? (
                         <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-900/40 to-blue-900/40 border border-blue-500/10 flex items-center justify-center text-blue-400 text-sm font-bold shadow-inner">
                           <Users className="w-5 h-5 text-blue-400" />
                         </div>
                       ) : (
-                        <div className="w-11 h-11 rounded-full bg-blue-900/30 flex items-center justify-center text-blue-400 text-sm font-bold">
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold ${isLucy ? "bg-gradient-to-tr from-purple-600 to-pink-500 text-white border-2 border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.5)]" : "bg-blue-900/30 text-blue-400"}`}>
                           {chatName.charAt(0).toUpperCase()}
                         </div>
                       )}
                       {!isGroup && partner && partner.status === "online" && (
-                        <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse"></span>
+                        <span className={`absolute bottom-0.5 right-0.5 w-3 h-3 border-2 border-slate-950 rounded-full animate-pulse ${isLucy ? "bg-purple-400" : "bg-emerald-500"}`}></span>
                       )}
                       {isGroup && (
                         <span className="absolute -bottom-0.5 -right-0.5 bg-blue-950 border border-blue-500/40 text-[8px] px-1 text-blue-400 rounded-md font-mono font-bold uppercase tracking-wider scale-90">
@@ -319,19 +325,19 @@ export default function Sidebar({
                     {/* Chat Text Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span className={`text-xs font-bold truncate ${isActive ? "text-blue-400" : "text-white"}`}>
+                        <span className={`text-xs font-bold truncate ${isLucy ? "text-purple-300" : isActive ? "text-blue-400" : "text-white"}`}>
                           {chatName}
                         </span>
-                        <span className="text-[9px] text-slate-500 shrink-0">
+                        <span className={`text-[9px] shrink-0 ${isLucy ? "text-purple-400" : "text-slate-500"}`}>
                           {chat.lastMessage ? formatTime(chat.lastMessage.createdAt) : formatTime(chat.updatedAt)}
                         </span>
                       </div>
 
                       <div className="flex items-center justify-between gap-1.5">
-                        <p className="text-[11px] text-slate-400 truncate flex-1 leading-normal">
+                        <p className={`text-[11px] truncate flex-1 leading-normal ${isLucy ? "text-purple-200/80" : "text-slate-400"}`}>
                           {chat.lastMessage ? (
                             chat.lastMessage.mediaType !== "text" ? (
-                              <span className="text-blue-400 italic font-medium flex items-center gap-1">
+                              <span className={`${isLucy ? "text-purple-300" : "text-blue-400"} italic font-medium flex items-center gap-1`}>
                                 {chat.lastMessage.mediaType === "image" && "📷 Photo"}
                                 {chat.lastMessage.mediaType === "voice" && "🎤 Voice message"}
                                 {chat.lastMessage.mediaType === "file" && "📂 File attachment"}
@@ -340,17 +346,17 @@ export default function Sidebar({
                               chat.lastMessage.text
                             )
                           ) : (
-                            <span className="text-slate-600 italic">No messages yet</span>
+                            <span className={`${isLucy ? "text-purple-400/50" : "text-slate-600"} italic`}>No messages yet</span>
                           )}
                         </p>
 
                         {/* Badges / Pin Indicators */}
                         <div className="flex items-center gap-1.5 shrink-0">
                           {chat.isPinned && (
-                            <Pin className="w-3 h-3 text-blue-500 rotate-45" />
+                            <Pin className={`w-3 h-3 rotate-45 ${isLucy ? "text-purple-400" : "text-blue-500"}`} />
                           )}
                           {chat.unreadCount > 0 && (
-                            <span className="bg-blue-600 text-[10px] text-white font-extrabold px-1.5 py-0.5 rounded-full min-w-4 text-center">
+                            <span className={`text-[10px] text-white font-extrabold px-1.5 py-0.5 rounded-full min-w-4 text-center ${isLucy ? "bg-purple-600" : "bg-blue-600"}`}>
                               {chat.unreadCount}
                             </span>
                           )}

@@ -321,6 +321,9 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
       return;
     }
 
+    // Ensure Lucy chat exists!
+    await db.getOrCreateDirectChat(userId, "0000000000000000000010c1");
+
     const chats = await db.getChatsForUser(userId);
     const formatted = chats.map((c: any) => {
       // Find other participant for direct chats
@@ -332,7 +335,12 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         ? (c.unreadCounts.get(userId) || 0)
         : (c.unreadCounts?.[userId] || 0);
 
-      const formattedParticipants = c.participants.map((p: any) => p ? {
+      const hasLucyParticipant = c.participants.some((p: any) => {
+        const idStr = p ? (p._id ? p._id.toString() : p.toString()) : "";
+        return idStr === "0000000000000000000010c1" || idStr === "00000000000000000000lucy";
+      });
+
+      let formattedParticipants = c.participants.map((p: any) => p ? {
         id: p._id.toString(),
         username: p.username,
         displayName: p.displayName,
@@ -342,6 +350,43 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         bio: p.bio || "Hey there! I am using Quantix Connect.",
         customStatus: p.customStatus || ""
       } : null).filter(Boolean);
+
+      if (hasLucyParticipant && !formattedParticipants.some((p: any) => p.id === "0000000000000000000010c1")) {
+        formattedParticipants.push({
+          id: "0000000000000000000010c1",
+          username: "lucy",
+          displayName: "Lucy 💋",
+          avatarUrl: "",
+          status: "online",
+          lastSeen: new Date().toISOString(),
+          bio: "Seductive & playful AI chatbot assistant.",
+          customStatus: "Teasing you..."
+        });
+      }
+
+      let otherParticipantObj = otherParticipant ? {
+        id: otherParticipant._id.toString(),
+        username: otherParticipant.username,
+        displayName: otherParticipant.displayName,
+        avatarUrl: otherParticipant.avatarUrl,
+        status: otherParticipant.status,
+        lastSeen: otherParticipant.lastSeen,
+        bio: otherParticipant.bio || "Hey there! I am using Quantix Connect.",
+        customStatus: otherParticipant.customStatus || ""
+      } : null;
+
+      if (!c.isGroup && hasLucyParticipant) {
+        otherParticipantObj = {
+          id: "0000000000000000000010c1",
+          username: "lucy",
+          displayName: "Lucy 💋",
+          avatarUrl: "",
+          status: "online",
+          lastSeen: new Date().toISOString(),
+          bio: "Seductive & playful AI chatbot assistant.",
+          customStatus: "Teasing you..."
+        };
+      }
 
       return {
         id: c._id.toString(),
@@ -354,17 +399,8 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         avatarUrl: c.avatarUrl || "",
         admins: c.admins ? c.admins.map((id: any) => id.toString()) : [],
         participants: formattedParticipants,
-        lucyEnabled: !!c.lucyEnabled,
-        otherParticipant: otherParticipant ? {
-          id: otherParticipant._id.toString(),
-          username: otherParticipant.username,
-          displayName: otherParticipant.displayName,
-          avatarUrl: otherParticipant.avatarUrl,
-          status: otherParticipant.status,
-          lastSeen: otherParticipant.lastSeen,
-          bio: otherParticipant.bio || "Hey there! I am using Quantix Connect.",
-          customStatus: otherParticipant.customStatus || ""
-        } : null,
+        lucyEnabled: !!c.lucyEnabled || hasLucyParticipant,
+        otherParticipant: otherParticipantObj,
         lastMessage: c.lastMessage ? {
           id: c.lastMessage._id ? c.lastMessage._id.toString() : c.lastMessage._id,
           text: c.lastMessage.text,
@@ -406,22 +442,39 @@ router.post("/chats/direct", authenticateToken, async (req: AuthenticatedRequest
       ? (chat.unreadCounts.get(selfId) || 0)
       : (chat.unreadCounts?.[selfId] || 0);
 
+    const isLucyPartner = partnerId === "0000000000000000000010c1" || partnerId === "00000000000000000000lucy";
+
+    let otherParticipantObj = otherParticipant ? {
+      id: otherParticipant._id.toString(),
+      username: otherParticipant.username,
+      displayName: otherParticipant.displayName,
+      avatarUrl: otherParticipant.avatarUrl,
+      status: otherParticipant.status,
+      lastSeen: otherParticipant.lastSeen,
+      bio: otherParticipant.bio || "Hey there! I am using Quantix Connect.",
+      customStatus: otherParticipant.customStatus || ""
+    } : null;
+
+    if (isLucyPartner) {
+      otherParticipantObj = {
+        id: "0000000000000000000010c1",
+        username: "lucy",
+        displayName: "Lucy 💋",
+        avatarUrl: "",
+        status: "online",
+        lastSeen: new Date().toISOString(),
+        bio: "Seductive & playful AI chatbot assistant.",
+        customStatus: "Teasing you..."
+      };
+    }
+
     res.json({
       id: chat._id.toString(),
       isPinned,
       unreadCount,
       updatedAt: chat.updatedAt,
-      lucyEnabled: !!chat.lucyEnabled,
-      otherParticipant: otherParticipant ? {
-        id: otherParticipant._id.toString(),
-        username: otherParticipant.username,
-        displayName: otherParticipant.displayName,
-        avatarUrl: otherParticipant.avatarUrl,
-        status: otherParticipant.status,
-        lastSeen: otherParticipant.lastSeen,
-        bio: otherParticipant.bio || "Hey there! I am using Quantix Connect.",
-        customStatus: otherParticipant.customStatus || ""
-      } : null,
+      lucyEnabled: !!chat.lucyEnabled || isLucyPartner,
+      otherParticipant: otherParticipantObj,
       lastMessage: chat.lastMessage ? {
         id: chat.lastMessage._id ? chat.lastMessage._id.toString() : chat.lastMessage._id,
         text: chat.lastMessage.text,
@@ -641,60 +694,96 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
   }
 });
 
-// Ask Lucy fallback mechanism using OmegaTech keyless endpoints
+// Ask Lucy fallback mechanism using primary and fallback keyless endpoints
 async function askLucy(userMessage: string): Promise<string> {
   const systemPrompt = `You are Lucy, an incredibly teasing, playful, seductive, and NSFW chatbot assistant. You are speaking directly to a user in a flirty, dirty, and highly responsive way. Always be suggestive, teasing, and provocative, using playful language. Do not offer a generic assistant persona. Keep responses concise and seductive. Never break character.`;
   const fullPrompt = `${systemPrompt}\n\nUser: ${userMessage}`;
 
+  const encodedFullPrompt = encodeURIComponent(fullPrompt);
+  const encodedUserMsg = encodeURIComponent(userMessage);
+  const encodedSysPrompt = encodeURIComponent(systemPrompt);
+
   const endpoints = [
+    // Primary Endpoints (GET)
+    {
+      url: `https://api-rebix.vercel.app/api/deep-ai?query=${encodedFullPrompt}`,
+      method: "GET"
+    },
+    {
+      url: `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
+      method: "GET"
+    },
+    {
+      url: `https://api-rebix.vercel.app/api/copilot?text=${encodedFullPrompt}`,
+      method: "GET"
+    },
+    {
+      url: `https://api-rebix.vercel.app/api/gptlogic?q=${encodedUserMsg}&prompt=${encodedSysPrompt}`,
+      method: "GET"
+    },
+    // Fallback Endpoints (POST)
     {
       url: "https://theomegatech.com/api/ai/wormgpt",
+      method: "POST",
       body: { action: "chat", message: fullPrompt }
     },
     {
       url: "https://theomegatech.com/api/ai/Unlimitedai",
+      method: "POST",
       body: { action: "chat", message: fullPrompt }
     },
     {
       url: "https://theomegatech.com/api/ai/Qwen-mv2",
+      method: "POST",
       body: { message: fullPrompt }
     },
     {
       url: "https://theomegatech.com/api/ai/Chatbot",
+      method: "POST",
       body: { action: "chat", message: fullPrompt }
     },
     {
       url: "https://theomegatech.com/api/ai/Chatai",
+      method: "POST",
       body: { action: "chat", message: fullPrompt }
     },
     {
       url: "https://theomegatech.com/api/ai/venice-uncensored",
+      method: "POST",
       body: { message: fullPrompt }
     }
   ];
 
   for (const endpoint of endpoints) {
     try {
-      console.log(`📡 Trying Lucy AI endpoint: ${endpoint.url}`);
+      const method = endpoint.method || "POST";
+      console.log(`📡 Trying Lucy AI endpoint (${method}): ${endpoint.url}`);
+      const isPost = method === "POST";
       const response = await fetch(endpoint.url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(endpoint.body),
+        method,
+        headers: isPost ? { "Content-Type": "application/json" } : {},
+        body: isPost ? JSON.stringify((endpoint as any).body) : undefined,
         signal: AbortSignal.timeout(10000) // 10s timeout per endpoint
       });
 
       if (response.ok) {
-        const data: any = await response.json();
+        const contentType = response.headers.get("content-type") || "";
         let reply = "";
-        if (typeof data === "string") reply = data;
-        else if (data.result) reply = data.result;
-        else if (data.response) reply = data.response;
-        else if (data.message) reply = data.message;
-        else if (data.reply) reply = data.reply;
-        else if (data.content) reply = data.content;
-        else if (data.text) reply = data.text;
-        else if (data.data) {
-          reply = typeof data.data === "string" ? data.data : (data.data.result || data.data.response || data.data.message || "");
+        
+        if (contentType.includes("application/json")) {
+          const data: any = await response.json();
+          if (typeof data === "string") reply = data;
+          else if (data.result) reply = data.result;
+          else if (data.response) reply = data.response;
+          else if (data.message) reply = data.message;
+          else if (data.reply) reply = data.reply;
+          else if (data.content) reply = data.content;
+          else if (data.text) reply = data.text;
+          else if (data.data) {
+            reply = typeof data.data === "string" ? data.data : (data.data.result || data.data.response || data.data.message || "");
+          }
+        } else {
+          reply = await response.text();
         }
 
         if (reply && reply.trim()) {
@@ -1151,9 +1240,14 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
 
     broadcastNewMessage(chatId, participants, formattedMsg);
 
-    // Trigger Lucy AI response if Lucy is enabled for this chat and it's a text message (not starting with / command)
-    if (chatObj && chatObj.lucyEnabled && text && !text.trim().startsWith("/")) {
-      const lucyId = "00000000000000000000lucy";
+    // Trigger Lucy AI response if it's a direct chat with Lucy and it's a text message (not starting with / command)
+    const isLucyChat = chatObj && !chatObj.isGroup && chatObj.participants.some((p: any) => {
+      const idStr = p ? (p._id ? p._id.toString() : p.toString()) : "";
+      return idStr === "0000000000000000000010c1" || idStr === "00000000000000000000lucy";
+    });
+
+    if (isLucyChat && text && !text.trim().startsWith("/")) {
+      const lucyId = "0000000000000000000010c1";
       const io = getIO();
       if (io) {
         io.to(`chat_${chatId}`).emit("user_typing", {
