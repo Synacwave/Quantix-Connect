@@ -328,6 +328,34 @@ export default function App() {
       );
     });
 
+    // Edit message event
+    socket.on("message_edited", ({ chatId, messageId, text }: { chatId: string; messageId: string; text: string }) => {
+      setMessages((prevMsgs) =>
+        prevMsgs.map((m) => {
+          if (m.id === messageId) {
+            return { ...m, text };
+          }
+          return m;
+        })
+      );
+
+      // Also update last message in sidebar
+      setChats((prevChats) => 
+        prevChats.map((c) => {
+          if (c.id === chatId && c.lastMessage?.id === messageId) {
+            return {
+              ...c,
+              lastMessage: {
+                ...c.lastMessage,
+                text
+              }
+            };
+          }
+          return c;
+        })
+      );
+    });
+
     // Receive message updates (reactions, poll votes)
     socket.on("message_updated", ({ messageId, update }: { messageId: string; update: Partial<Message> }) => {
       setMessages((prevMsgs) =>

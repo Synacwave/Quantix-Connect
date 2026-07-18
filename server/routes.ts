@@ -356,7 +356,7 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
           id: "0000000000000000000010c1",
           username: "lucy",
           displayName: "Lucy 💋",
-          avatarUrl: "/uploads/lucy_profile.jpg",
+          avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
           status: "online",
           lastSeen: new Date().toISOString(),
           bio: "Seductive & playful AI chatbot assistant.",
@@ -380,7 +380,7 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
           id: "0000000000000000000010c1",
           username: "lucy",
           displayName: "Lucy 💋",
-          avatarUrl: "/uploads/lucy_profile.jpg",
+          avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
           status: "online",
           lastSeen: new Date().toISOString(),
           bio: "Seductive & playful AI chatbot assistant.",
@@ -460,7 +460,7 @@ router.post("/chats/direct", authenticateToken, async (req: AuthenticatedRequest
         id: "0000000000000000000010c1",
         username: "lucy",
         displayName: "Lucy 💋",
-        avatarUrl: "/uploads/lucy_profile.jpg",
+        avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
         status: "online",
         lastSeen: new Date().toISOString(),
         bio: "Seductive & playful AI chatbot assistant.",
@@ -1342,6 +1342,49 @@ router.post("/messages/delete", authenticateToken, async (req: AuthenticatedRequ
   } catch (error) {
     console.error("Delete Message Error:", error);
     res.status(500).json({ error: "Server error deleting message." });
+  }
+});
+
+// Edit Message (for self/sender)
+router.post("/messages/edit", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { messageId, text } = req.body;
+
+    if (!selfId || !messageId || text === undefined) {
+      res.status(400).json({ error: "Message ID and text are required." });
+      return;
+    }
+
+    const message = await db.findMessage(messageId);
+    if (!message) {
+      res.status(404).json({ error: "Message not found." });
+      return;
+    }
+
+    const senderId = message.senderId ? message.senderId.toString() : "";
+    if (senderId !== selfId) {
+      res.status(403).json({ error: "Unauthorized to edit this message." });
+      return;
+    }
+
+    const updated = await db.editMessage(messageId, text);
+    const chatId = message.chatId ? message.chatId.toString() : "";
+
+    // Broadcast edit via socket to all users in chat
+    const io = getIO();
+    if (io && chatId) {
+      io.to(`chat_${chatId}`).emit("message_edited", {
+        chatId,
+        messageId,
+        text
+      });
+    }
+
+    res.json({ success: true, messageId, text });
+  } catch (error) {
+    console.error("Edit Message Error:", error);
+    res.status(500).json({ error: "Server error editing message." });
   }
 });
 

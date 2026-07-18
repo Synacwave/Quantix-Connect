@@ -199,6 +199,11 @@ export default function ChatView({
   // Active hover/tap reaction menu message ID
   const [activeReactionMsgId, setActiveReactionMsgId] = useState<string | null>(null);
 
+  // Message tap interaction menu states
+  const [tapMenuMessage, setTapMenuMessage] = useState<Message | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editingText, setEditingText] = useState("");
+
   // Starred messages filter & store state
   const [starredMsgIds, setStarredMsgIds] = useState<string[]>([]);
   const [starredOnlyFilter, setStarredOnlyFilter] = useState(false);
@@ -510,6 +515,27 @@ export default function ChatView({
   const formatMessageTime = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // --- EDIT MESSAGE HANDLER ---
+  const handleSaveEdit = async () => {
+    if (!editingMessage) return;
+    try {
+      const response = await fetch("/api/messages/edit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ messageId: editingMessage.id, text: editingText })
+      });
+      if (response.ok) {
+        setEditingMessage(null);
+        setEditingText("");
+      }
+    } catch (e) {
+      console.error("Failed to edit message:", e);
+    }
   };
 
   // --- REACTION TOGGLE HANDLER ---
@@ -949,20 +975,26 @@ export default function ChatView({
                     </AnimatePresence>
 
                     {/* Chat Bubble Frame */}
-                    <div className={`relative w-full rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition ${
-                      isSelf 
-                        ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
-                        : (msg.senderId === "00000000000000000000lucy" || msg.senderId === "0000000000000000000010c1")
-                          ? "bg-pink-950/20 border-pink-500/30 text-pink-100 rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]"
-                          : isTaggedMe
-                            ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
-                            : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
-                    }`}>
+                    <div 
+                      onClick={() => setTapMenuMessage(msg)}
+                      className={`relative w-full rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition cursor-pointer hover:brightness-105 active:scale-[0.99] duration-150 select-none ${
+                        isSelf 
+                          ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
+                          : (msg.senderId === "00000000000000000000lucy" || msg.senderId === "0000000000000000000010c1")
+                            ? "bg-pink-950/20 border-pink-500/30 text-pink-100 rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]"
+                            : isTaggedMe
+                              ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
+                              : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
+                      }`}
+                    >
                       
                       {/* Replying Block (Quoted Reply) */}
                       {msg.replyTo && (
                         <button
-                          onClick={() => scrollToMessageId(msg.replyTo.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            scrollToMessageId(msg.replyTo.id);
+                          }}
                           className="w-full text-left bg-slate-950/45 hover:bg-slate-950 border-l-4 border-blue-500 rounded-r-lg p-2 mb-1.5 transition text-xs shrink-0 select-none block"
                         >
                           <span className="font-extrabold text-blue-400 block text-[9px] mb-0.5">
@@ -998,20 +1030,29 @@ export default function ChatView({
 
                       {/* Message Content: Image */}
                       {msg.mediaType === "image" && msg.mediaUrl && (
-                        <div className="rounded-xl overflow-hidden mb-1 border border-slate-950 bg-slate-950 shadow-inner max-w-xs relative group-media">
+                        <div 
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded-xl overflow-hidden mb-1 border border-slate-950 bg-slate-950 shadow-inner max-w-xs relative group-media"
+                        >
                           <img 
                             src={msg.mediaUrl} 
                             alt="Shared Photo" 
                             className="max-w-full max-h-60 object-contain hover:scale-102 transition duration-200 cursor-pointer" 
                             referrerPolicy="no-referrer"
-                            onClick={() => window.open(msg.mediaUrl, "_blank")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(msg.mediaUrl!, "_blank");
+                            }}
                           />
                         </div>
                       )}
 
                       {/* Message Content: Voice */}
                       {msg.mediaType === "voice" && msg.mediaUrl && (
-                        <div className="mb-1 shrink-0">
+                        <div 
+                          onClick={(e) => e.stopPropagation()}
+                          className="mb-1 shrink-0"
+                        >
                           <VoicePlayer url={msg.mediaUrl} />
                         </div>
                       )}
@@ -1023,6 +1064,7 @@ export default function ChatView({
                           download={msg.text}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="flex items-center gap-3 bg-slate-950/50 hover:bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl text-left transition mb-1 max-w-xs cursor-pointer group"
                         >
                           <File className="w-6 h-6 text-blue-500 shrink-0" />
@@ -1057,7 +1099,10 @@ export default function ChatView({
                                 return (
                                   <button
                                     key={idx}
-                                    onClick={() => handlePollVote(msg.id, idx)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handlePollVote(msg.id, idx);
+                                    }}
                                     className={`w-full text-left rounded-lg p-2.5 border text-[11px] font-medium transition-all relative overflow-hidden flex justify-between items-center group/opt ${
                                       hasVoted 
                                         ? "bg-blue-600/10 border-blue-500/30 text-blue-300" 
@@ -1122,7 +1167,10 @@ export default function ChatView({
                             return (
                               <button
                                 key={emoji}
-                                onClick={() => handleToggleReaction(msg.id, emoji)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleReaction(msg.id, emoji);
+                                }}
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition cursor-pointer active:scale-95 ${
                                   reactedByMe 
                                     ? "bg-blue-600/10 border-blue-500/30 text-blue-300 shadow-sm" 
@@ -1145,7 +1193,7 @@ export default function ChatView({
           )}
 
           {/* Live Typing indicator bubble */}
-          {!activeChat.isGroup && partner && typingUsers[partner.id] && (
+          {!activeChat.isGroup && partner && partner.id !== "0000000000000000000010c1" && partner.id !== "00000000000000000000lucy" && partner.username !== "lucy" && typingUsers[partner.id] && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 5 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1850,6 +1898,187 @@ export default function ChatView({
             user={selectedProfileUser}
             onClose={() => setSelectedProfileUser(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Tap Interaction Menu Modal */}
+      <AnimatePresence>
+        {tapMenuMessage && (() => {
+          const isMsgSelf = tapMenuMessage.senderId === currentUser.id;
+          const isStarred = starredMsgIds.includes(tapMenuMessage.id);
+          
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setTapMenuMessage(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-left relative overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <span className="text-xs font-mono text-slate-500 uppercase tracking-widest">Message Options</span>
+                  <button 
+                    onClick={() => setTapMenuMessage(null)}
+                    className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Quick Reactions Selection */}
+                <div className="flex justify-between bg-slate-950/60 border border-slate-900/80 p-2 rounded-full px-3">
+                  {["👍", "❤️", "😂", "😮", "😢", "🙏"].map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={() => {
+                        handleToggleReaction(tapMenuMessage.id, emoji);
+                        setTapMenuMessage(null);
+                      }}
+                      className="text-lg hover:scale-130 active:scale-90 transition duration-150 cursor-pointer"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Text preview of message */}
+                {tapMenuMessage.mediaType === "text" && (
+                  <div className="bg-slate-950/40 p-3 rounded-2xl border border-slate-800/40 text-[11px] text-slate-400 italic max-h-24 overflow-y-auto break-words leading-relaxed">
+                    "{tapMenuMessage.text}"
+                  </div>
+                )}
+
+                {/* Option Actions List */}
+                <div className="grid grid-cols-1 gap-1.5 mt-1">
+                  
+                  {/* Reply */}
+                  <button
+                    onClick={() => {
+                      setReplyingToMessage(tapMenuMessage);
+                      setTapMenuMessage(null);
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-slate-800/40 hover:border-slate-700 text-left text-xs text-white font-medium transition cursor-pointer"
+                  >
+                    <CornerUpLeft className="w-4 h-4 text-blue-400" />
+                    <span>Reply to Message</span>
+                  </button>
+
+                  {/* Star */}
+                  <button
+                    onClick={() => {
+                      toggleStarMessage(tapMenuMessage.id);
+                      setTapMenuMessage(null);
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-slate-800/40 hover:border-slate-700 text-left text-xs text-white font-medium transition cursor-pointer"
+                  >
+                    <Star className={`w-4 h-4 ${isStarred ? "text-yellow-400 fill-yellow-400" : "text-slate-400"}`} />
+                    <span>{isStarred ? "Unstar Message" : "Star Message"}</span>
+                  </button>
+
+                  {/* Edit (only if sent by self) */}
+                  {isMsgSelf && tapMenuMessage.mediaType === "text" && (
+                    <button
+                      onClick={() => {
+                        setEditingMessage(tapMenuMessage);
+                        setEditingText(tapMenuMessage.text);
+                        setTapMenuMessage(null);
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-slate-800/40 hover:border-slate-700 text-left text-xs text-white font-medium transition cursor-pointer"
+                    >
+                      <Edit2 className="w-4 h-4 text-emerald-400" />
+                      <span>Edit Message</span>
+                    </button>
+                  )}
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => {
+                      onDeleteMessage(tapMenuMessage.id);
+                      setTapMenuMessage(null);
+                    }}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-red-950/20 hover:bg-red-950/40 border border-red-500/10 hover:border-red-500/20 text-left text-xs text-red-400 font-medium transition cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Message</span>
+                  </button>
+
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Edit Message Modal dialog */}
+      <AnimatePresence>
+        {editingMessage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEditingMessage(null)}
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-left relative"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Modify Message</span>
+                </div>
+                <button 
+                  onClick={() => setEditingMessage(null)}
+                  className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Textarea Input */}
+              <div className="relative">
+                <textarea
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  className="w-full h-24 bg-slate-950/80 border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-none font-normal leading-relaxed"
+                  placeholder="Edit your message text..."
+                  autoFocus
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingMessage(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={!editingText.trim()}
+                  className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

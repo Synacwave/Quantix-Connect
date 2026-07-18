@@ -187,7 +187,7 @@ export const db = {
         _id: "0000000000000000000010c1",
         username: "lucy",
         displayName: "Lucy 💋",
-        avatarUrl: "/uploads/lucy_profile.jpg",
+        avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
         status: "online",
         lastSeen: new Date().toISOString(),
         bio: "Seductive & playful AI chatbot assistant.",
@@ -213,7 +213,7 @@ export const db = {
         _id: "0000000000000000000010c1",
         username: "lucy",
         displayName: "Lucy 💋",
-        avatarUrl: "/uploads/lucy_profile.jpg",
+        avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
         status: "online",
         lastSeen: new Date().toISOString(),
         bio: "Seductive & playful AI chatbot assistant.",
@@ -314,7 +314,7 @@ export const db = {
               _id: "0000000000000000000010c1",
               username: "lucy",
               displayName: "Lucy 💋",
-              avatarUrl: "/uploads/lucy_profile.jpg",
+              avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
               status: "online",
               lastSeen: new Date().toISOString(),
               bio: "Seductive & playful AI chatbot assistant.",
@@ -390,7 +390,7 @@ export const db = {
             _id: "0000000000000000000010c1",
             username: "lucy",
             displayName: "Lucy 💋",
-            avatarUrl: "/uploads/lucy_profile.jpg",
+            avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
             status: "online",
             lastSeen: new Date().toISOString(),
             bio: "Seductive & playful AI chatbot assistant.",
@@ -572,6 +572,28 @@ export const db = {
       if (!store.messages[idx].deletedFor.includes(userId)) {
         store.messages[idx].deletedFor.push(userId);
       }
+      writeLocalDB(store);
+      return store.messages[idx];
+    }
+  },
+
+  async findMessage(messageId: string) {
+    if (isMongoDB && MongoMessage) {
+      return MongoMessage.findById(messageId);
+    } else {
+      const store = readLocalDB();
+      return store.messages.find(m => m._id === messageId) || null;
+    }
+  },
+
+  async editMessage(messageId: string, text: string) {
+    if (isMongoDB && MongoMessage) {
+      return MongoMessage.findByIdAndUpdate(messageId, { text }, { new: true });
+    } else {
+      const store = readLocalDB();
+      const idx = store.messages.findIndex(m => m._id === messageId);
+      if (idx === -1) return null;
+      store.messages[idx].text = text;
       writeLocalDB(store);
       return store.messages[idx];
     }
