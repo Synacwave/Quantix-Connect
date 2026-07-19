@@ -750,7 +750,7 @@ async function askLucy(userMessage: string): Promise<string> {
     },
     // Last Fallback Endpoint
     {
-      url: `https://api-rebix.vercel.app/api/copilot?text=${encodedFullPrompt}`,
+      url: `https://prexzyapis.com/ai/deepseekchat?prompt=${encodedFullPrompt}`,
       method: "GET"
     }
   ];
