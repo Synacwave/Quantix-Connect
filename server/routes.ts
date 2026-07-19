@@ -27,12 +27,30 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     return;
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+  jwt.verify(token, JWT_SECRET, async (err: any, jwtUser: any) => {
     if (err) {
       res.status(403).json({ error: "Invalid or expired token" });
       return;
     }
-    req.user = user;
+    
+    // Check ban status in database
+    try {
+      const userObj = await db.findUserById(jwtUser.id);
+      if (userObj && userObj.isBanned) {
+        if (userObj.bannedUntil && new Date(userObj.bannedUntil) > new Date()) {
+          res.status(403).json({ error: `You are temporarily banned until ${new Date(userObj.bannedUntil).toLocaleString()}` });
+          return;
+        } else if (!userObj.bannedUntil) {
+          res.status(403).json({ error: "You are permanently banned from the platform." });
+          return;
+        }
+      }
+    } catch (dbErr) {
+      // Proceed if database is temporarily unreachable, but log
+      console.error("Auth middleware database error:", dbErr);
+    }
+
+    req.user = jwtUser;
     next();
   });
 }
@@ -151,7 +169,24 @@ router.post("/auth/login", async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const user = await db.findUserByUsername(username.trim().toLowerCase());
+    const trimmedUsername = username.trim().toLowerCase();
+
+    // Auto-create main administrator if it doesn't exist yet
+    if (trimmedUsername === "08132803772" && password === "#Qwerty123") {
+      let adminUser = await db.findUserByUsername("08132803772");
+      if (!adminUser) {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash("#Qwerty123", salt);
+        await db.createUser({
+          username: "08132803772",
+          displayName: "System Admin",
+          passwordHash,
+          avatarUrl: ""
+        });
+      }
+    }
+
+    const user = await db.findUserByUsername(trimmedUsername);
     if (!user) {
       res.status(400).json({ error: "Invalid username or password." });
       return;
@@ -161,6 +196,17 @@ router.post("/auth/login", async (req: Request, res: Response): Promise<void> =>
     if (!isMatch) {
       res.status(400).json({ error: "Invalid username or password." });
       return;
+    }
+
+    // Check ban status
+    if (user.isBanned) {
+      if (user.bannedUntil && new Date(user.bannedUntil) > new Date()) {
+        res.status(403).json({ error: `You are temporarily banned until ${new Date(user.bannedUntil).toLocaleString()}` });
+        return;
+      } else if (!user.bannedUntil) {
+        res.status(403).json({ error: "You are permanently banned from the platform." });
+        return;
+      }
     }
 
     // Set online
@@ -434,6 +480,13 @@ router.post("/chats/direct", authenticateToken, async (req: AuthenticatedRequest
       return;
     }
 
+    // Check block status
+    const blocked = await db.isBlocked(selfId, partnerId);
+    if (blocked) {
+      res.status(403).json({ error: "Cannot start a chat. One of the users is blocked." });
+      return;
+    }
+
     const chat = await db.getOrCreateDirectChat(selfId, partnerId);
     
     const otherParticipant = chat.participants.find((p: any) => p && p._id.toString() !== selfId);
@@ -704,49 +757,26 @@ async function askLucy(userMessage: string): Promise<string> {
   const encodedSysPrompt = encodeURIComponent(systemPrompt);
 
   const endpoints = [
-    // Primary Endpoints (GET) - Prioritizing gpt-5 
+    // Prexzy APIs as main/primary APIs with Lucy personality
+    {
+      url: `https://prexzyapis.com/ai/askgpt5?prompt=${encodedFullPrompt}`,
+      method: "GET"
+    },
+    {
+      url: `https://prexzyapis.com/ai/deepseekchat?prompt=${encodedFullPrompt}`,
+      method: "GET"
+    },
+    // Remaining Rebix APIs
+    {
+      url: `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
+      method: "GET"
+    },
     {
       url: `https://api-rebix.vercel.app/api/gptlogic?q=${encodedUserMsg}&prompt=${encodedSysPrompt}`,
       method: "GET"
     },
     {
       url: `https://api-rebix.vercel.app/api/deep-ai?query=${encodedFullPrompt}`,
-      method: "GET"
-    },
-    // Fallback Endpoints (POST)
-    {
-      url: "https://theomegatech.com/api/ai/wormgpt",
-      method: "POST",
-      body: { action: "chat", message: fullPrompt }
-    },
-    {
-      url: "https://theomegatech.com/api/ai/Unlimitedai",
-      method: "POST",
-      body: { action: "chat", message: fullPrompt }
-    },
-    {
-      url: "https://theomegatech.com/api/ai/Qwen-mv2",
-      method: "POST",
-      body: { message: fullPrompt }
-    },
-    {
-      url: "https://theomegatech.com/api/ai/Chatbot",
-      method: "POST",
-      body: { action: "chat", message: fullPrompt }
-    },
-    {
-      url: "https://theomegatech.com/api/ai/Chatai",
-      method: "POST",
-      body: { action: "chat", message: fullPrompt }
-    },
-    {
-      url: "https://theomegatech.com/api/ai/venice-uncensored",
-      method: "POST",
-      body: { message: fullPrompt }
-    },
-    // Last Fallback Endpoint
-    {
-      url: `https://prexzyapis.com/ai/deepseekchat?prompt=${encodedFullPrompt}`,
       method: "GET"
     }
   ];
@@ -1210,6 +1240,17 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
     }
 
     // 3. Regular non-command message
+    if (!isGroup) {
+      const partnerId = participants.find((p: string) => p !== selfId);
+      if (partnerId && partnerId !== "0000000000000000000010c1" && partnerId !== "00000000000000000000lucy") {
+        const isBlocked = await db.isBlocked(selfId, partnerId);
+        if (isBlocked) {
+          res.status(403).json({ error: "Cannot send messages. One of the users is blocked." });
+          return;
+        }
+      }
+    }
+
     const savedMsg = await db.createMessage({
       chatId,
       senderId: selfId,
@@ -1582,6 +1623,413 @@ router.post("/messages/:messageId/poll/vote", authenticateToken, async (req: Aut
   } catch (error) {
     console.error("Poll Vote Error:", error);
     res.status(500).json({ error: "Server error casting vote." });
+  }
+});
+
+// --- REPORT & BLOCKS & MODERATION ROUTES ---
+
+const TELEGRAM_BOT_TOKEN = "8681328218:AAGqy1CwwiCj1gwseCRFs6LXDM8r5o8KiHo";
+const TELEGRAM_CHAT_ID = "8471445778";
+
+async function sendTelegramMessage(text: string) {
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: text,
+        parse_mode: "HTML"
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error("Telegram sendMessage failed:", data);
+    }
+  } catch (err) {
+    console.error("Failed to send Telegram message:", err);
+  }
+}
+
+async function sendTelegramPhoto(caption: string, base64Data: string) {
+  try {
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      throw new Error("Invalid base64 payload");
+    }
+    const mimeType = matches[1];
+    const buffer = Buffer.from(matches[2], "base64");
+    
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+    const formData = new FormData();
+    formData.append("chat_id", TELEGRAM_CHAT_ID);
+    formData.append("caption", caption);
+    
+    const blob = new Blob([buffer], { type: mimeType });
+    formData.append("photo", blob, `screenshot.${mimeType.split("/")[1] || "png"}`);
+    
+    const res = await fetch(url, {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error("Telegram sendPhoto failed:", data);
+    }
+  } catch (err) {
+    console.error("Failed to send Telegram photo:", err);
+  }
+}
+
+// Submit Issue Report
+router.post("/reports/issue", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { category, title, description, screenshot } = req.body;
+
+    if (!selfId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!category || !title || !description) {
+      res.status(400).json({ error: "Category, Title, and Description are required." });
+      return;
+    }
+
+    const reporter = await db.findUserById(selfId);
+    if (!reporter) {
+      res.status(404).json({ error: "Reporter not found." });
+      return;
+    }
+
+    let savedScreenshotUrl = "";
+    if (screenshot && screenshot.startsWith("data:")) {
+      try {
+        savedScreenshotUrl = saveBase64File(screenshot);
+      } catch (err) {
+        console.error("Failed to save report screenshot locally:", err);
+      }
+    } else if (screenshot) {
+      savedScreenshotUrl = screenshot;
+    }
+
+    // Save in database
+    await db.createReport({
+      type: "issue",
+      reporterId: selfId,
+      category,
+      title,
+      description,
+      screenshot: savedScreenshotUrl
+    });
+
+    // Send Telegram Notification
+    const timestamp = new Date().toLocaleString();
+    const telegramMessage = `🚨 <b>APP ISSUE REPORT</b>\n\n` +
+      `👤 <b>User:</b> ${reporter.username}\n` +
+      `🆔 <b>User ID:</b> ${selfId}\n\n` +
+      `📂 <b>Category:</b> ${category}\n` +
+      `📝 <b>Title:</b> ${title}\n\n` +
+      `📄 <b>Description:</b>\n${description}\n\n` +
+      `🕒 <b>Time:</b>\n${timestamp}`;
+
+    await sendTelegramMessage(telegramMessage);
+
+    // If screenshot exists, send photo too
+    if (screenshot && screenshot.startsWith("data:")) {
+      await sendTelegramPhoto(`Screenshot for issue: ${title}`, screenshot);
+    }
+
+    res.json({ success: true, message: "Issue reported successfully." });
+  } catch (error) {
+    console.error("Issue Report Error:", error);
+    res.status(500).json({ error: "Server error reporting issue." });
+  }
+});
+
+// Submit User Report
+router.post("/reports/user", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { reportedUserId, reason, description } = req.body;
+
+    if (!selfId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!reportedUserId || !reason || !description) {
+      res.status(400).json({ error: "Reported user, Reason, and Description are required." });
+      return;
+    }
+
+    const reporter = await db.findUserById(selfId);
+    const reportedUser = await db.findUserById(reportedUserId);
+
+    if (!reporter || !reportedUser) {
+      res.status(404).json({ error: "Reporter or Reported user not found." });
+      return;
+    }
+
+    // Retrieve last 10 messages context
+    const chat = await db.getOrCreateDirectChat(selfId, reportedUserId);
+    const messages = await db.getMessages(chat._id.toString(), selfId);
+    const last10 = messages
+      .slice()
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10)
+      .reverse();
+
+    const messagesContext = [];
+    let telegramMsgs = "";
+
+    for (let i = 0; i < last10.length; i++) {
+      const msg = last10[i];
+      const isSelf = msg.senderId.toString() === selfId;
+      const senderUsername = isSelf ? reporter.username : reportedUser.username;
+      
+      messagesContext.push({
+        senderUsername,
+        senderId: msg.senderId.toString(),
+        text: msg.text || `[Media: ${msg.mediaType}]`,
+        createdAt: msg.createdAt ? new Date(msg.createdAt).toISOString() : new Date().toISOString()
+      });
+
+      telegramMsgs += `${i + 1}. [${senderUsername}]: ${msg.text || `[Media: ${msg.mediaType}]`}\n`;
+    }
+
+    if (!telegramMsgs) {
+      telegramMsgs = "No messages exchanged yet.";
+    }
+
+    // Save in DB
+    await db.createReport({
+      type: "user",
+      reporterId: selfId,
+      reportedUserId,
+      reason,
+      description,
+      messagesContext
+    });
+
+    // Send Telegram Notification
+    const timestamp = new Date().toLocaleString();
+    const telegramMessage = `⚠️ <b>USER REPORT</b>\n\n` +
+      `<b>Reporter</b>\n` +
+      `Username: ${reporter.username}\n` +
+      `User ID: ${selfId}\n\n` +
+      `<b>Reported User</b>\n` +
+      `Username: ${reportedUser.username}\n` +
+      `User ID: ${reportedUserId}\n\n` +
+      `<b>Reason:</b> ${reason}\n` +
+      `<b>Description:</b>\n${description}\n\n` +
+      `<b>Last 10 Messages</b>\n\n` +
+      `${telegramMsgs}\n` +
+      `Time: ${timestamp}`;
+
+    await sendTelegramMessage(telegramMessage);
+
+    res.json({ success: true, message: "User reported successfully." });
+  } catch (error) {
+    console.error("User Report Error:", error);
+    res.status(500).json({ error: "Server error reporting user." });
+  }
+});
+
+// Block User
+router.post("/users/block", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { targetId } = req.body;
+
+    if (!selfId || !targetId) {
+      res.status(400).json({ error: "Target User ID is required." });
+      return;
+    }
+
+    if (selfId === targetId) {
+      res.status(400).json({ error: "Cannot block yourself." });
+      return;
+    }
+
+    await db.blockUser(selfId, targetId);
+    res.json({ success: true, message: "User blocked successfully." });
+  } catch (error) {
+    console.error("Block User Error:", error);
+    res.status(500).json({ error: "Server error blocking user." });
+  }
+});
+
+// Unblock User
+router.post("/users/unblock", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    const { targetId } = req.body;
+
+    if (!selfId || !targetId) {
+      res.status(400).json({ error: "Target User ID is required." });
+      return;
+    }
+
+    await db.unblockUser(selfId, targetId);
+    res.json({ success: true, message: "User unblocked successfully." });
+  } catch (error) {
+    console.error("Unblock User Error:", error);
+    res.status(500).json({ error: "Server error unblocking user." });
+  }
+});
+
+// Get Blocked Users list
+router.get("/users/blocked", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const selfId = req.user?.id;
+    if (!selfId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const selfUser = await db.findUserById(selfId);
+    if (!selfUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const blockedIds = selfUser.blockedUsers || [];
+    const blockedList = [];
+
+    for (const bId of blockedIds) {
+      const u = await db.findUserById(bId);
+      if (u) {
+        blockedList.push({
+          id: u._id.toString(),
+          username: u.username,
+          displayName: u.displayName,
+          avatarUrl: u.avatarUrl
+        });
+      }
+    }
+
+    res.json(blockedList);
+  } catch (error) {
+    console.error("Get Blocked Users Error:", error);
+    res.status(500).json({ error: "Server error retrieving blocked list." });
+  }
+});
+
+// Admin Authorization Middleware Helper
+function requireAdmin(req: AuthenticatedRequest, res: Response, next: any) {
+  if (req.user?.username !== "08132803772") {
+    res.status(403).json({ error: "Access denied. Administrator privileges required." });
+    return;
+  }
+  next();
+}
+
+// Admin: Search / List Users
+router.get("/admin/users", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { q } = req.query;
+    let users = await db.getAllUsers();
+    
+    if (q && typeof q === "string") {
+      const search = q.trim().toLowerCase();
+      users = users.filter((u: any) => 
+        u.username.toLowerCase().includes(search) || 
+        u.displayName.toLowerCase().includes(search)
+      );
+    }
+
+    res.json(users.map((u: any) => ({
+      id: u._id.toString(),
+      username: u.username,
+      displayName: u.displayName,
+      avatarUrl: u.avatarUrl,
+      status: u.status,
+      lastSeen: u.lastSeen,
+      isBanned: !!u.isBanned,
+      bannedUntil: u.bannedUntil
+    })));
+  } catch (error) {
+    console.error("Admin Users Fetch Error:", error);
+    res.status(500).json({ error: "Server error fetching admin users." });
+  }
+});
+
+// Admin: View User Details & Previous Reports
+router.get("/admin/users/:userId", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const user = await db.findUserById(userId);
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    const reports = await db.getReportsForUser(userId);
+
+    res.json({
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        status: user.status,
+        lastSeen: user.lastSeen,
+        bio: user.bio,
+        customStatus: user.customStatus,
+        createdAt: user.createdAt,
+        isBanned: !!user.isBanned,
+        bannedUntil: user.bannedUntil
+      },
+      reports: reports.map((r: any) => ({
+        id: r._id ? r._id.toString() : r._id,
+        type: r.type,
+        reporterId: r.reporterId,
+        category: r.category,
+        reason: r.reason,
+        title: r.title,
+        description: r.description,
+        screenshot: r.screenshot,
+        messagesContext: r.messagesContext,
+        createdAt: r.createdAt
+      }))
+    });
+  } catch (error) {
+    console.error("Admin User Details Error:", error);
+    res.status(500).json({ error: "Server error fetching user details." });
+  }
+});
+
+// Admin: Ban User
+router.post("/admin/users/:userId/ban", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const { bannedUntil } = req.body; // ISO Date String, or undefined for permanent
+
+    let dateObj: Date | undefined = undefined;
+    if (bannedUntil) {
+      dateObj = new Date(bannedUntil);
+    }
+
+    await db.banUser(userId, dateObj);
+    res.json({ success: true, message: "User banned successfully." });
+  } catch (error) {
+    console.error("Admin Ban Error:", error);
+    res.status(500).json({ error: "Server error banning user." });
+  }
+});
+
+// Admin: Unban User
+router.post("/admin/users/:userId/unban", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    await db.unbanUser(userId);
+    res.json({ success: true, message: "User unbanned successfully." });
+  } catch (error) {
+    console.error("Admin Unban Error:", error);
+    res.status(500).json({ error: "Server error unbanning user." });
   }
 });
 

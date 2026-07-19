@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "motion/react";
-import { MessageSquare, Zap, Github, ArrowUpRight, Lock } from "lucide-react";
+import { MessageSquare, Zap, Github, ArrowUpRight, Lock, Send } from "lucide-react";
 import { User, Chat, Message } from "./types";
 import LoginScreen from "./components/LoginScreen";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
 import SettingsModal from "./components/SettingsModal";
 import ProfileModal from "./components/ProfileModal";
+import AdminModal from "./components/AdminModal";
 
 function playNotificationSound(type: "incoming" | "outgoing" = "incoming") {
   try {
@@ -62,6 +63,7 @@ export default function App() {
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   
   const [showSettings, setShowSettings] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [selectedProfileUser, setSelectedProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
@@ -677,6 +679,20 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full max-w-full overflow-hidden bg-slate-950 text-slate-100 flex flex-col relative select-none">
       
+      {/* Contact Dev Floating Button at top-right corner of screen */}
+      <div className="absolute top-3 right-4 z-40">
+        <a
+          href="https://t.me/GREAT_EXPECTATIONS"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-sky-400 hover:text-sky-300 border border-blue-500/20 shadow-lg shadow-blue-500/10 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
+          title="Contact Dev (Telegram)"
+        >
+          <Send className="w-3.5 h-3.5 transform rotate-45 text-sky-400 animate-pulse" />
+          <span className="text-[10px] font-extrabold tracking-widest uppercase font-sans">Contact Dev</span>
+        </a>
+      </div>
+
       {/* Real-time full-page messaging content */}
       <div className="flex-1 flex overflow-hidden">
         
@@ -690,6 +706,7 @@ export default function App() {
             onOpenSettings={() => setShowSettings(true)}
             onStartDirectChat={handleStartDirectChat}
             onViewUserProfile={setSelectedProfileUser}
+            onOpenAdmin={() => setShowAdmin(true)}
           />
         </div>
 
@@ -753,6 +770,19 @@ export default function App() {
           <ProfileModal
             user={selectedProfileUser}
             onClose={() => setSelectedProfileUser(null)}
+            onStartDirectChat={(partnerId) => {
+              const partner = chats.flatMap(c => c.participants).find(p => p.id === partnerId) || selectedProfileUser;
+              handleStartDirectChat(partner);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Admin Panel Modal Layer */}
+      <AnimatePresence>
+        {showAdmin && (
+          <AdminModal
+            onClose={() => setShowAdmin(false)}
           />
         )}
       </AnimatePresence>

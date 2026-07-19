@@ -17,7 +17,10 @@ const UserSchema = new mongoose.Schema({
   lastSeen: { type: Date, default: Date.now },
   bio: { type: String, default: "Hey there! I am using Quantix Connect." },
   customStatus: { type: String, default: "" },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  isBanned: { type: Boolean, default: false },
+  bannedUntil: { type: Date },
+  blockedUsers: [{ type: String, default: [] }]
 });
 
 const ChatSchema = new mongoose.Schema({
@@ -55,15 +58,35 @@ const MessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const ReportSchema = new mongoose.Schema({
+  type: { type: String, enum: ["issue", "user"], required: true },
+  reporterId: { type: String, required: true },
+  reportedUserId: { type: String },
+  category: { type: String },
+  reason: { type: String },
+  title: { type: String },
+  description: { type: String },
+  screenshot: { type: String },
+  messagesContext: [{
+    senderUsername: String,
+    senderId: String,
+    text: String,
+    createdAt: Date
+  }],
+  createdAt: { type: Date, default: Date.now }
+});
+
 export let MongoUser: any;
 export let MongoChat: any;
 export let MongoMessage: any;
+export let MongoReport: any;
 
 if (isMongoDB) {
   // Define models immediately so they are available, but they won't be queried if isMongoDB becomes false
   MongoUser = mongoose.model("User", UserSchema);
   MongoChat = mongoose.model("Chat", ChatSchema);
   MongoMessage = mongoose.model("Message", MessageSchema);
+  MongoReport = mongoose.model("Report", ReportSchema);
 
   mongoose.connect(MONGODB_URI!, {
     serverSelectionTimeoutMS: 4000, // Fail fast after 4 seconds
@@ -121,6 +144,9 @@ interface LocalUser {
   bio?: string;
   customStatus?: string;
   createdAt: string;
+  isBanned?: boolean;
+  bannedUntil?: string;
+  blockedUsers?: string[];
 }
 
 interface LocalChat {
@@ -161,10 +187,30 @@ interface LocalMessage {
   createdAt: string;
 }
 
+interface LocalReport {
+  _id: string;
+  type: "issue" | "user";
+  reporterId: string;
+  reportedUserId?: string;
+  category?: string;
+  reason?: string;
+  title?: string;
+  description: string;
+  screenshot?: string;
+  messagesContext?: Array<{
+    senderUsername: string;
+    senderId: string;
+    text: string;
+    createdAt: string;
+  }>;
+  createdAt: string;
+}
+
 interface LocalDB {
   users: LocalUser[];
   chats: LocalChat[];
   messages: LocalMessage[];
+  reports: LocalReport[];
 }
 
 function ensureLocalDB() {
@@ -173,7 +219,7 @@ function ensureLocalDB() {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(LOCAL_DB_PATH)) {
-    const initialData: LocalDB = { users: [], chats: [], messages: [] };
+    const initialData: LocalDB = { users: [], chats: [], messages: [], reports: [] };
     fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(initialData, null, 2));
   }
 }
@@ -182,9 +228,11 @@ function readLocalDB(): LocalDB {
   ensureLocalDB();
   try {
     const content = fs.readFileSync(LOCAL_DB_PATH, "utf-8");
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    if (!parsed.reports) parsed.reports = [];
+    return parsed;
   } catch (e) {
-    return { users: [], chats: [], messages: [] };
+    return { users: [], chats: [], messages: [], reports: [] };
   }
 }
 
@@ -651,5 +699,153 @@ export const db = {
       writeLocalDB(store);
       return true;
     }
+  },
+
+  async blockUser(userId: string, targetId: string) {
+    if (isMongoDB && MongoUser) {
+      return MongoUser.findByIdAndUpdate(userId, {
+        $addToSet: { blockedUsers: targetId }
+      }, { new: true });
+    } else {
+      const store = readLocalDB();
+      const idx = store.users.findIndex(u => u._id === userId);
+      if (idx !== -1) {
+        if (!store.users[idx].blockedUsers) {
+          store.users[idx].blockedUsers = [];
+        }
+        if (!store.users[idx].blockedUsers.includes(targetId)) {
+          store.users[idx].blockedUsers.push(targetId);
+        }
+        writeLocalDB(store);
+      }
+      return null;
+    }
+  },
+
+  async unblockUser(userId: string, targetId: string) {
+    if (isMongoDB && MongoUser) {
+      return MongoUser.findByIdAndUpdate(userId, {
+        $pull: { blockedUsers: targetId }
+      }, { new: true });
+    } else {
+      const store = readLocalDB();
+      const idx = store.users.findIndex(u => u._id === userId);
+      if (idx !== -1 && store.users[idx].blockedUsers) {
+        store.users[idx].blockedUsers = store.users[idx].blockedUsers.filter(id => id !== targetId);
+        writeLocalDB(store);
+      }
+      return null;
+    }
+  },
+
+  async isBlocked(userId1: string, userId2: string): Promise<boolean> {
+    if (!userId1 || !userId2) return false;
+    if (isMongoDB && MongoUser) {
+      const user1 = await MongoUser.findById(userId1);
+      const user2 = await MongoUser.findById(userId2);
+      const blockedBy1 = user1?.blockedUsers?.includes(userId2) || false;
+      const blockedBy2 = user2?.blockedUsers?.includes(userId1) || false;
+      return blockedBy1 || blockedBy2;
+    } else {
+      const store = readLocalDB();
+      const u1 = store.users.find(u => u._id === userId1);
+      const u2 = store.users.find(u => u._id === userId2);
+      const blockedBy1 = u1?.blockedUsers?.includes(userId2) || false;
+      const blockedBy2 = u2?.blockedUsers?.includes(userId1) || false;
+      return blockedBy1 || blockedBy2;
+    }
+  },
+
+  async banUser(targetId: string, tempUntil?: Date) {
+    if (isMongoDB && MongoUser) {
+      return MongoUser.findByIdAndUpdate(targetId, {
+        isBanned: true,
+        bannedUntil: tempUntil || null
+      }, { new: true });
+    } else {
+      const store = readLocalDB();
+      const idx = store.users.findIndex(u => u._id === targetId);
+      if (idx !== -1) {
+        store.users[idx].isBanned = true;
+        store.users[idx].bannedUntil = tempUntil ? tempUntil.toISOString() : undefined;
+        writeLocalDB(store);
+      }
+      return null;
+    }
+  },
+
+  async unbanUser(targetId: string) {
+    if (isMongoDB && MongoUser) {
+      return MongoUser.findByIdAndUpdate(targetId, {
+        isBanned: false,
+        bannedUntil: null
+      }, { new: true });
+    } else {
+      const store = readLocalDB();
+      const idx = store.users.findIndex(u => u._id === targetId);
+      if (idx !== -1) {
+        store.users[idx].isBanned = false;
+        store.users[idx].bannedUntil = undefined;
+        writeLocalDB(store);
+      }
+      return null;
+    }
+  },
+
+  async createReport(reportData: {
+    type: "issue" | "user";
+    reporterId: string;
+    reportedUserId?: string;
+    category?: string;
+    reason?: string;
+    title?: string;
+    description: string;
+    screenshot?: string;
+    messagesContext?: Array<{
+      senderUsername: string;
+      senderId: string;
+      text: string;
+      createdAt: string;
+    }>;
+  }) {
+    if (isMongoDB && MongoReport) {
+      const report = new MongoReport({
+        ...reportData,
+        createdAt: new Date()
+      });
+      return await report.save();
+    } else {
+      const store = readLocalDB();
+      if (!store.reports) store.reports = [];
+      const newReport = {
+        _id: generateId(),
+        ...reportData,
+        createdAt: new Date().toISOString()
+      };
+      store.reports.push(newReport);
+      writeLocalDB(store);
+      return newReport;
+    }
+  },
+
+  async getReportsForUser(targetId: string) {
+    if (isMongoDB && MongoReport) {
+      return MongoReport.find({ reportedUserId: targetId }).sort({ createdAt: -1 });
+    } else {
+      const store = readLocalDB();
+      if (!store.reports) return [];
+      return store.reports
+        .filter(r => r.reportedUserId === targetId)
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+  },
+
+  async getAllUsers() {
+    if (isMongoDB && MongoUser) {
+      return MongoUser.find({}).select("-passwordHash");
+    } else {
+      const store = readLocalDB();
+      return store.users.map(({ passwordHash, ...rest }) => rest);
+    }
   }
-};
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Settings, Pin, MessageSquare, UserPlus, Circle, LogOut, Users } from "lucide-react";
+import { Search, Settings, Pin, MessageSquare, UserPlus, Circle, LogOut, Users, Send, ShieldAlert } from "lucide-react";
 import { User, Chat } from "../types";
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ interface SidebarProps {
   onOpenSettings: () => void;
   onStartDirectChat: (partner: User) => void;
   onViewUserProfile?: (user: User) => void;
+  onOpenAdmin?: () => void;
 }
 
 export default function Sidebar({
@@ -19,7 +20,8 @@ export default function Sidebar({
   onSelectChat,
   onOpenSettings,
   onStartDirectChat,
-  onViewUserProfile
+  onViewUserProfile,
+  onOpenAdmin
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -168,6 +170,15 @@ export default function Sidebar({
             <span className="font-extrabold tracking-tight text-white text-base">Quantix Connect</span>
           </div>
           <div className="flex items-center gap-1">
+            {currentUser.username === "08132803772" && onOpenAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="p-1.5 rounded-full hover:bg-slate-800 text-red-500 hover:text-red-400 transition cursor-pointer flex items-center justify-center animate-pulse"
+                title="System Admin Command Center"
+              >
+                <ShieldAlert className="w-4.5 h-4.5" />
+              </button>
+            )}
             <button
               onClick={() => setShowCreateGroupModal(true)}
               className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"

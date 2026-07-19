@@ -799,7 +799,7 @@ export default function ChatView({
           </div>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 mr-28">
             {/* Starred Messages Toggle Button */}
             <button
               onClick={() => setStarredOnlyFilter(!starredOnlyFilter)}

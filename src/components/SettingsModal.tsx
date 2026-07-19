@@ -21,6 +21,76 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Issue reporting states
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [issueTitle, setIssueTitle] = useState("");
+  const [issueCategory, setIssueCategory] = useState("Bug");
+  const [issueDescription, setIssueDescription] = useState("");
+  const [issueScreenshot, setIssueScreenshot] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState("");
+  const reportFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setReportError("Screenshot size must be under 5MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setIssueScreenshot(reader.result as string);
+        setReportError("");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReportError("");
+    setReportSuccess(false);
+    setReportLoading(true);
+
+    if (!issueTitle.trim() || !issueDescription.trim()) {
+      setReportError("Title and Description are required.");
+      setReportLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/reports/issue", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          category: issueCategory,
+          title: issueTitle.trim(),
+          description: issueDescription.trim(),
+          screenshot: issueScreenshot || undefined
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit report.");
+      }
+
+      setReportSuccess(true);
+      setIssueTitle("");
+      setIssueDescription("");
+      setIssueScreenshot("");
+    } catch (err: any) {
+      setReportError(err.message || "An error occurred.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -89,140 +159,304 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
         transition={{ duration: 0.2 }}
         className="w-full max-w-md bg-slate-950 border border-blue-500/20 rounded-3xl overflow-hidden shadow-2xl"
       >
-        {/* Header */}
-        <div className="px-6 py-4 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-blue-500 animate-spin-slow" />
-            <h2 className="text-lg font-bold text-white">Quantix Settings</h2>
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <form onSubmit={handleSave} className="p-6 space-y-6">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl p-3">
-              {error}
+        {!showReportForm ? (
+          <>
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-500 animate-spin-slow" />
+                <h2 className="text-lg font-bold text-white">Quantix Settings</h2>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          )}
 
-          {success && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl p-3">
-              Profile updated successfully!
-            </div>
-          )}
-
-          {/* Profile Pic Upload */}
-          <div className="flex flex-col items-center gap-2">
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-24 h-24 rounded-full border-2 border-blue-500/30 hover:border-blue-500/60 bg-slate-900 flex flex-col items-center justify-center cursor-pointer overflow-hidden transition relative group shadow-lg"
-            >
-              {avatarBase64 ? (
-                <img src={avatarBase64} alt="New Avatar Preview" className="w-full h-full object-cover" />
-              ) : user.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Current Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-2xl font-bold">
-                  {user.displayName.charAt(0).toUpperCase()}
+            {/* Form Body */}
+            <form onSubmit={handleSave} className="p-6 space-y-6">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl p-3">
+                  {error}
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
-                <Upload className="w-5 h-5 text-white" />
+
+              {success && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl p-3">
+                  Profile updated successfully!
+                </div>
+              )}
+
+              {/* Profile Pic Upload */}
+              <div className="flex flex-col items-center gap-2">
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-24 h-24 rounded-full border-2 border-blue-500/30 hover:border-blue-500/60 bg-slate-900 flex flex-col items-center justify-center cursor-pointer overflow-hidden transition relative group shadow-lg"
+                >
+                  {avatarBase64 ? (
+                    <img src={avatarBase64} alt="New Avatar Preview" className="w-full h-full object-cover" />
+                  ) : user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Current Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-2xl font-bold">
+                      {user.displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                    <Upload className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <span className="text-[10px] text-slate-500">Click to change profile image</span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
               </div>
-            </div>
-            <span className="text-[10px] text-slate-500">Click to change profile image</span>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
-              className="hidden" 
-            />
-          </div>
 
-          <div className="space-y-4">
-            {/* Username (Non-Editable) */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 tracking-wide">Username</label>
-              <div className="w-full bg-slate-900/50 border border-slate-900 text-slate-500 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
-                <UserIcon className="w-4 h-4" />
-                <span>@{user.username}</span>
+              <div className="space-y-4">
+                {/* Username (Non-Editable) */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400 tracking-wide">Username</label>
+                  <div className="w-full bg-slate-900/50 border border-slate-900 text-slate-500 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
+                    <UserIcon className="w-4 h-4" />
+                    <span>@{user.username}</span>
+                  </div>
+                </div>
+
+                {/* Display Name Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400 tracking-wide">Display Name</label>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Display Name"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+
+                {/* Custom Status Input */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Custom Status</label>
+                    <span className="text-[10px] text-slate-500">e.g., 🚀 coding away</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={customStatus}
+                    onChange={(e) => setCustomStatus(e.target.value)}
+                    placeholder="What's your vibe today?"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                  />
+                </div>
+
+                {/* Bio / About Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400 tracking-wide">About (Bio)</label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Write a short bio about yourself..."
+                    rows={2}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Display Name Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 tracking-wide">Display Name</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Display Name"
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
-
-            {/* Custom Status Input */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-slate-400 tracking-wide">Custom Status</label>
-                <span className="text-[10px] text-slate-500">e.g., 🚀 coding away</span>
+              {/* Report an Issue Button Option at bottom */}
+              <div className="border-t border-slate-900 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowReportForm(true)}
+                  className="w-full bg-slate-900/60 hover:bg-slate-900 text-red-400 hover:text-red-300 border border-slate-800 hover:border-red-500/20 rounded-xl py-3 text-xs font-medium transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>🚩 Report an Issue</span>
+                </button>
               </div>
-              <input
-                type="text"
-                value={customStatus}
-                onChange={(e) => setCustomStatus(e.target.value)}
-                placeholder="What's your vibe today?"
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-              />
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="w-1/3 bg-red-950/40 border border-red-500/20 text-red-400 font-medium py-3 rounded-xl text-xs transition hover:bg-red-950/70 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Log Out</span>
+                </button>
+                
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-2/3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition shadow-[0_4px_12px_rgba(37,99,235,0.2)] flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {loading ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🚩</span>
+                <h2 className="text-lg font-bold text-white">Report an Issue</h2>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowReportForm(false);
+                  setReportSuccess(false);
+                  setReportError("");
+                  setIssueTitle("");
+                  setIssueDescription("");
+                  setIssueScreenshot("");
+                }}
+                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Bio / About Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-400 tracking-wide">About (Bio)</label>
-              <textarea
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Write a short bio about yourself..."
-                rows={2}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
-              />
-            </div>
-          </div>
+            {/* Issue Form Body */}
+            <form onSubmit={handleReportSubmit} className="p-6 space-y-4">
+              {reportError && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl p-3">
+                  {reportError}
+                </div>
+              )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onLogout}
-              className="w-1/3 bg-red-950/40 border border-red-500/20 text-red-400 font-medium py-3 rounded-xl text-xs transition hover:bg-red-950/70 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Log Out</span>
-            </button>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-2/3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition shadow-[0_4px_12px_rgba(37,99,235,0.2)] flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : (
+              {reportSuccess && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl p-3">
+                  Issue reported successfully! The developer has been notified.
+                </div>
+              )}
+
+              {!reportSuccess && (
                 <>
-                  <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
+                  {/* Title */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Issue Title</label>
+                    <input
+                      type="text"
+                      required
+                      value={issueTitle}
+                      onChange={(e) => setIssueTitle(e.target.value)}
+                      placeholder="Short summary of the issue"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Category</label>
+                    <select
+                      value={issueCategory}
+                      onChange={(e) => setIssueCategory(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    >
+                      <option value="Bug">Bug</option>
+                      <option value="UI Issue">UI Issue</option>
+                      <option value="Login Issue">Login Issue</option>
+                      <option value="Feature Request">Feature Request</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Description</label>
+                    <textarea
+                      required
+                      value={issueDescription}
+                      onChange={(e) => setIssueDescription(e.target.value)}
+                      placeholder="Provide a detailed description of what happened..."
+                      rows={3}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                    />
+                  </div>
+
+                  {/* Screenshot Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Optional Screenshot</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => reportFileInputRef.current?.click()}
+                        className="bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-medium px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+                      >
+                        Choose File
+                      </button>
+                      <span className="text-xs text-slate-500 truncate max-w-[200px]">
+                        {issueScreenshot ? "Screenshot attached" : "No file chosen"}
+                      </span>
+                      {issueScreenshot && (
+                        <button
+                          type="button"
+                          onClick={() => setIssueScreenshot("")}
+                          className="text-red-400 text-xs hover:underline cursor-pointer ml-auto"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      ref={reportFileInputRef}
+                      onChange={handleReportFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                  </div>
                 </>
               )}
-            </button>
-          </div>
-        </form>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReportForm(false);
+                    setReportSuccess(false);
+                    setReportError("");
+                    setIssueTitle("");
+                    setIssueDescription("");
+                    setIssueScreenshot("");
+                  }}
+                  className="w-1/3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-medium py-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center cursor-pointer"
+                >
+                  Back
+                </button>
+                
+                {!reportSuccess && (
+                  <button
+                    type="submit"
+                    disabled={reportLoading}
+                    className="w-2/3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
+                  >
+                    {reportLoading ? (
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    ) : (
+                      "Submit Report"
+                    )}
+                  </button>
+                )}
+              </div>
+            </form>
+          </>
+        )}
       </motion.div>
     </div>
   );
