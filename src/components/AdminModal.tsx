@@ -55,6 +55,41 @@ export default function AdminModal({ onClose }: AdminModalProps) {
 
   const token = localStorage.getItem("token");
 
+  // Broadcast State
+  const [broadcastText, setBroadcastText] = useState("");
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [broadcastSuccess, setBroadcastSuccess] = useState("");
+  const [broadcastError, setBroadcastError] = useState("");
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastText.trim()) return;
+    setBroadcastLoading(true);
+    setBroadcastSuccess("");
+    setBroadcastError("");
+    try {
+      const response = await fetch("/api/admin/broadcast", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ text: broadcastText })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setBroadcastSuccess("Official broadcast dispatched successfully to all active users!");
+        setBroadcastText("");
+      } else {
+        setBroadcastError(data.error || "Failed to dispatch system broadcast.");
+      }
+    } catch (err) {
+      console.error("Error sending broadcast:", err);
+      setBroadcastError("A network error occurred while sending the broadcast.");
+    } finally {
+      setBroadcastLoading(false);
+    }
+  };
+
   // Fetch all users
   const fetchUsers = async () => {
     setLoadingUsers(true);
@@ -279,9 +314,64 @@ export default function AdminModal({ onClose }: AdminModalProps) {
           {/* Right panel: User Details, Reports & Ban Trigger */}
           <div className="flex-1 min-h-0 flex flex-col bg-slate-950/40 overflow-y-auto p-6 space-y-6">
             {!selectedUserId ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-2 py-12">
-                <User className="w-12 h-12 text-slate-700 animate-bounce" />
-                <p className="text-xs">Select a user from the left pane to begin moderation.</p>
+              <div className="space-y-6">
+                {/* Global Broadcast System */}
+                <div className="bg-slate-900/30 border border-red-500/15 rounded-3xl p-6 space-y-4">
+                  <div className="flex items-center gap-2.5 text-red-500">
+                    <ShieldAlert className="w-5 h-5 animate-pulse" />
+                    <h3 className="text-sm font-extrabold text-white tracking-widest uppercase font-sans">
+                      Global System Broadcast Dispatcher
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Send an official system announcement directly to every registered user on Quantix Connect. The message will appear with an official admin broadcast badge and a deep shadow black glow.
+                  </p>
+
+                  <div className="space-y-1.5 mt-2">
+                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Broadcast Message</label>
+                    <textarea
+                      rows={4}
+                      value={broadcastText}
+                      onChange={(e) => setBroadcastText(e.target.value)}
+                      placeholder="Type your official administrative broadcast message here..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500/30 transition-all placeholder:text-slate-600 resize-none"
+                    />
+                  </div>
+
+                  {broadcastError && (
+                    <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                      {broadcastError}
+                    </div>
+                  )}
+
+                  {broadcastSuccess && (
+                    <div className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                      {broadcastSuccess}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onClick={handleSendBroadcast}
+                      disabled={broadcastLoading || !broadcastText.trim()}
+                      className="bg-red-600 hover:bg-red-500 disabled:opacity-40 disabled:hover:bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shadow-[0_4px_12px_rgba(239,68,68,0.2)]"
+                    >
+                      {broadcastLoading ? (
+                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      ) : (
+                        <>
+                          <ShieldAlert className="w-4 h-4" />
+                          <span>Dispatch Broadcast Announcement</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center text-slate-500 space-y-2 py-12 bg-slate-900/10 border border-slate-900/50 rounded-2xl">
+                  <User className="w-10 h-10 text-slate-700" />
+                  <p className="text-xs font-medium">Select a user from the left pane to access user-specific moderator actions.</p>
+                </div>
               </div>
             ) : loadingDetail ? (
               <div className="flex items-center justify-center h-full py-24">

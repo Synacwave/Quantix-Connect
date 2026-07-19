@@ -40,6 +40,7 @@ const MessageSchema = new mongoose.Schema({
   mediaType: { type: String, enum: ["text", "image", "voice", "file", "poll"], default: "text" },
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  isBroadcast: { type: Boolean, default: false },
   replyTo: {
     id: String,
     text: String,
@@ -169,6 +170,7 @@ interface LocalMessage {
   mediaType: "text" | "image" | "voice" | "file" | "poll";
   readBy: string[]; // User IDs
   deletedFor: string[]; // User IDs
+  isBroadcast?: boolean;
   replyTo?: {
     id: string;
     text: string;
@@ -266,12 +268,23 @@ export const db = {
       };
     }
     if (isMongoDB && MongoUser) {
-      return MongoUser.findById(id).select("-passwordHash");
+      const u = await MongoUser.findById(id).select("-passwordHash");
+      if (u) {
+        const obj = u.toObject ? u.toObject() : u;
+        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
+          obj.displayName = obj.displayName + " ♠︎";
+        }
+        return obj;
+      }
+      return null;
     } else {
       const store = readLocalDB();
       const user = store.users.find(u => u._id === id);
       if (!user) return null;
       const { passwordHash, ...rest } = user;
+      if (rest.username === "08132803772" && !rest.displayName.endsWith(" ♠︎")) {
+        rest.displayName = rest.displayName + " ♠︎";
+      }
       return rest;
     }
   },
@@ -292,10 +305,26 @@ export const db = {
       };
     }
     if (isMongoDB && MongoUser) {
-      return MongoUser.findOne({ username: lowerUsername });
+      const u = await MongoUser.findOne({ username: lowerUsername });
+      if (u) {
+        const obj = u.toObject ? u.toObject() : u;
+        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
+          obj.displayName = obj.displayName + " ♠︎";
+        }
+        return obj;
+      }
+      return null;
     } else {
       const store = readLocalDB();
-      return store.users.find(u => u.username.toLowerCase() === lowerUsername) || null;
+      const user = store.users.find(u => u.username.toLowerCase() === lowerUsername) || null;
+      if (user) {
+        const cloned = { ...user };
+        if (cloned.username === "08132803772" && !cloned.displayName.endsWith(" ♠︎")) {
+          cloned.displayName = cloned.displayName + " ♠︎";
+        }
+        return cloned;
+      }
+      return null;
     }
   },
 
@@ -348,18 +377,31 @@ export const db = {
   async searchUsers(query: string, excludeId: string) {
     const q = query.toLowerCase();
     if (isMongoDB && MongoUser) {
-      return MongoUser.find({
+      const users = await MongoUser.find({
         _id: { $ne: excludeId },
         $or: [
           { username: { $regex: q, $options: "i" } },
           { displayName: { $regex: q, $options: "i" } }
         ]
       }).select("-passwordHash").limit(20);
+      return users.map((u: any) => {
+        const obj = u.toObject ? u.toObject() : u;
+        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
+          obj.displayName = obj.displayName + " ♠︎";
+        }
+        return obj;
+      });
     } else {
       const store = readLocalDB();
       return store.users
         .filter(u => u._id !== excludeId && (u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)))
-        .map(({ passwordHash, ...rest }) => rest)
+        .map(({ passwordHash, ...rest }) => {
+          const cloned = { ...rest };
+          if (cloned.username === "08132803772" && !cloned.displayName.endsWith(" ♠︎")) {
+            cloned.displayName = cloned.displayName + " ♠︎";
+          }
+          return cloned;
+        })
         .slice(0, 20);
     }
   },
@@ -555,6 +597,7 @@ export const db = {
       options: string[];
     };
     selfDestructIn?: number;
+    isBroadcast?: boolean;
   }) {
     if (isMongoDB && MongoMessage) {
       const msg = new MongoMessage({
@@ -571,7 +614,8 @@ export const db = {
           options: msgData.poll.options,
           votes: {}
         } : undefined,
-        selfDestructIn: msgData.selfDestructIn
+        selfDestructIn: msgData.selfDestructIn,
+        isBroadcast: msgData.isBroadcast || false
       });
       await msg.save();
 
@@ -609,7 +653,8 @@ export const db = {
           votes: {}
         } : undefined,
         selfDestructIn: msgData.selfDestructIn,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        isBroadcast: msgData.isBroadcast || false
       };
       store.messages.push(newMsg);
 
@@ -842,10 +887,23 @@ export const db = {
 
   async getAllUsers() {
     if (isMongoDB && MongoUser) {
-      return MongoUser.find({}).select("-passwordHash");
+      const users = await MongoUser.find({}).select("-passwordHash");
+      return users.map((u: any) => {
+        const obj = u.toObject ? u.toObject() : u;
+        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
+          obj.displayName = obj.displayName + " ♠︎";
+        }
+        return obj;
+      });
     } else {
       const store = readLocalDB();
-      return store.users.map(({ passwordHash, ...rest }) => rest);
+      return store.users.map(({ passwordHash, ...rest }) => {
+        const cloned = { ...rest };
+        if (cloned.username === "08132803772" && !cloned.displayName.endsWith(" ♠︎")) {
+          cloned.displayName = cloned.displayName + " ♠︎";
+        }
+        return cloned;
+      });
     }
   }
 }

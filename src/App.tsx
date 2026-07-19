@@ -679,20 +679,6 @@ export default function App() {
   return (
     <div className="h-[100dvh] w-full max-w-full overflow-hidden bg-slate-950 text-slate-100 flex flex-col relative select-none">
       
-      {/* Contact Dev Floating Button at top-right corner of screen */}
-      <div className="absolute top-3 right-4 z-40">
-        <a
-          href="https://t.me/GREAT_EXPECTATIONS"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-sky-400 hover:text-sky-300 border border-blue-500/20 shadow-lg shadow-blue-500/10 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
-          title="Contact Dev (Telegram)"
-        >
-          <Send className="w-3.5 h-3.5 transform rotate-45 text-sky-400 animate-pulse" />
-          <span className="text-[10px] font-extrabold tracking-widest uppercase font-sans">Contact Dev</span>
-        </a>
-      </div>
-
       {/* Real-time full-page messaging content */}
       <div className="flex-1 flex overflow-hidden">
         

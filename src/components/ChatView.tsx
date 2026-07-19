@@ -799,7 +799,7 @@ export default function ChatView({
           </div>
 
           {/* Header Actions */}
-          <div className="flex items-center gap-1 shrink-0 mr-28">
+          <div className="flex items-center gap-1 shrink-0 mr-2">
             {/* Starred Messages Toggle Button */}
             <button
               onClick={() => setStarredOnlyFilter(!starredOnlyFilter)}
@@ -978,13 +978,15 @@ export default function ChatView({
                     <div 
                       onClick={() => setTapMenuMessage(msg)}
                       className={`relative w-full rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition cursor-pointer hover:brightness-105 active:scale-[0.99] duration-150 select-none ${
-                        isSelf 
-                          ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
-                          : (msg.senderId === "00000000000000000000lucy" || msg.senderId === "0000000000000000000010c1")
-                            ? "bg-pink-950/20 border-pink-500/30 text-pink-100 rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]"
-                            : isTaggedMe
-                              ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
-                              : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
+                        msg.isBroadcast
+                          ? "bg-slate-900 border-slate-700/60 text-slate-100 rounded-tl-none shadow-[0_0_20px_rgba(0,0,0,1.0)] ring-1 ring-black"
+                          : isSelf 
+                            ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
+                            : (msg.senderId === "00000000000000000000lucy" || msg.senderId === "0000000000000000000010c1")
+                              ? "bg-pink-950/20 border-pink-500/30 text-pink-100 rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]"
+                              : isTaggedMe
+                                ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
+                                : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
                       }`}
                     >
                       
@@ -1006,8 +1008,16 @@ export default function ChatView({
                         </button>
                       )}
 
+                      {/* Broadcast Badge Header */}
+                      {msg.isBroadcast && (
+                        <span className="text-[10px] font-extrabold text-red-400 mb-0.5 block flex items-center gap-1.5 select-none">
+                          <span>📢 Admin Broadcast</span>
+                          <span className="bg-slate-950 border border-slate-800 text-slate-400 text-[8px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold shadow-[0_0_8px_rgba(0,0,0,1)]">OFFICIAL</span>
+                        </span>
+                      )}
+
                       {/* Group Sender Name Header */}
-                      {activeChat.isGroup && !isSelf && msg.senderId !== "00000000000000000000lucy" && msg.senderId !== "0000000000000000000010c1" && (
+                      {activeChat.isGroup && !isSelf && !msg.isBroadcast && msg.senderId !== "00000000000000000000lucy" && msg.senderId !== "0000000000000000000010c1" && (
                         <span className="text-[10px] font-extrabold text-blue-400 mb-0.5 block">
                           {senderUser?.displayName || `User @${msg.senderId.slice(-4)}`}
                         </span>

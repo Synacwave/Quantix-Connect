@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MessageSquare, Shield, Upload, Eye, EyeOff, Sparkles, AlertCircle } from "lucide-react";
+import { MessageSquare, Shield, Upload, Eye, EyeOff, Sparkles, AlertCircle, Send } from "lucide-react";
 
 interface LoginScreenProps {
   onAuthSuccess: (token: string, user: any) => void;
@@ -73,6 +73,26 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-radial from-slate-900 via-blue-950 to-black p-4 select-none relative overflow-hidden">
+      {/* Top Navbar */}
+      <div className="absolute top-0 left-0 w-full h-16 border-b border-blue-500/10 bg-slate-950/40 backdrop-blur-md flex items-center justify-between px-6 sm:px-12 z-50">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-blue-500" />
+          <span className="text-sm font-extrabold text-white tracking-widest uppercase font-sans">
+            Quantix <span className="text-blue-500 font-light">Connect</span>
+          </span>
+        </div>
+        <a
+          href="https://t.me/GREAT_EXPECTATIONS"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900/90 hover:bg-slate-800 text-sky-400 hover:text-sky-300 border border-blue-500/20 shadow-lg shadow-blue-500/5 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95"
+          title="Contact Dev (Telegram)"
+        >
+          <Send className="w-3.5 h-3.5 transform rotate-45 text-sky-400 animate-pulse" />
+          <span className="text-xs font-bold tracking-wider font-sans">Contact Dev</span>
+        </a>
+      </div>
+
       {/* Decorative ambient blobs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl -z-10 animate-pulse duration-[6000ms]"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl -z-10 animate-pulse duration-[8000ms]"></div>

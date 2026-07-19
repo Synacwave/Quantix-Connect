@@ -737,7 +737,8 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
         options: m.poll.options,
         votes: m.poll.votes instanceof Map ? Object.fromEntries(m.poll.votes) : (m.poll.votes || {})
       } : undefined,
-      selfDestructIn: m.selfDestructIn
+      selfDestructIn: m.selfDestructIn,
+      isBroadcast: !!m.isBroadcast
     }));
 
     res.json(formatted);
@@ -1278,7 +1279,8 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
         options: savedMsg.poll.options,
         votes: savedMsg.poll.votes instanceof Map ? Object.fromEntries(savedMsg.poll.votes) : (savedMsg.poll.votes || {})
       } : undefined,
-      selfDestructIn: savedMsg.selfDestructIn
+      selfDestructIn: savedMsg.selfDestructIn,
+      isBroadcast: !!savedMsg.isBroadcast
     };
 
     broadcastNewMessage(chatId, participants, formattedMsg);
@@ -2030,6 +2032,77 @@ router.post("/admin/users/:userId/unban", authenticateToken, requireAdmin, async
   } catch (error) {
     console.error("Admin Unban Error:", error);
     res.status(500).json({ error: "Server error unbanning user." });
+  }
+});
+
+// Admin: Broadcast Message to every user
+router.post("/admin/broadcast", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { text } = req.body;
+    if (!text || typeof text !== "string" || !text.trim()) {
+      res.status(400).json({ error: "Broadcast text content is required." });
+      return;
+    }
+
+    const selfId = req.user?.id;
+    if (!selfId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const adminUser = await db.findUserById(selfId);
+    if (!adminUser) {
+      res.status(404).json({ error: "Admin user not found." });
+      return;
+    }
+
+    // Get all users
+    const allUsers = await db.getAllUsers();
+    
+    // Filter out the admin themselves and Lucy AI bot
+    const targetUsers = allUsers.filter((u: any) => {
+      const uId = u._id.toString();
+      return uId !== selfId && uId !== "0000000000000000000010c1" && u.username !== "lucy";
+    });
+
+    let broadcastCount = 0;
+
+    for (const targetUser of targetUsers) {
+      const targetUserId = targetUser._id.toString();
+      
+      // Find or create direct chat
+      const directChat = await db.getOrCreateDirectChat(selfId, targetUserId);
+      const chatId = directChat._id.toString();
+
+      // Create message
+      const savedMsg = await db.createMessage({
+        chatId,
+        senderId: selfId,
+        text: text.trim(),
+        isBroadcast: true
+      });
+
+      const formattedMsg = {
+        id: savedMsg._id.toString(),
+        chatId,
+        senderId: selfId,
+        text: savedMsg.text,
+        mediaUrl: savedMsg.mediaUrl || "",
+        mediaType: savedMsg.mediaType || "text",
+        readBy: [selfId],
+        createdAt: savedMsg.createdAt,
+        isBroadcast: true
+      };
+
+      const participants = [selfId, targetUserId];
+      broadcastNewMessage(chatId, participants, formattedMsg);
+      broadcastCount++;
+    }
+
+    res.json({ success: true, message: `Successfully broadcasted to ${broadcastCount} users.` });
+  } catch (error: any) {
+    console.error("Admin Broadcast Error:", error);
+    res.status(500).json({ error: error.message || "Server error broadcasting message." });
   }
 });
 

@@ -275,8 +275,11 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                     onClick={() => setShowReportForm(true)}
                     className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold py-2.5 px-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
-                    <span>⚠️ Report</span>
+                    <div className="flex items-center gap-0.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
+                    </div>
+                    <span>⚠️⚠️ Report</span>
                   </button>
                 </div>
               )}

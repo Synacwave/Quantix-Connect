@@ -58,4 +58,5 @@ export interface Message {
   };
   selfDestructIn?: number; // countdown in seconds
   isStarred?: boolean; // Starred/saved message
+  isBroadcast?: boolean; // Broadcast system message
 }
