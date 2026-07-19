@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { X, MessageSquare, Clock, Shield, Info, Sparkles, AlertTriangle, ShieldAlert } from "lucide-react";
+import { X, MessageSquare, Clock, Shield, Info, Sparkles, Flag, ShieldAlert } from "lucide-react";
 import { User } from "../types";
 
 interface ProfileModalProps {
@@ -276,8 +276,8 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                     onClick={() => setShowReportForm(true)}
                     className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold py-2.5 px-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
-                    <span>⚠️ Report</span>
+                    <Flag className="w-3.5 h-3.5 text-red-500" />
+                    <span>🚩 Report</span>
                   </button>
                 </div>
               )}

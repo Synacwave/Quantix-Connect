@@ -37,14 +37,17 @@ export function authenticateToken(req: AuthenticatedRequest, res: Response, next
     // Check ban status in database
     try {
       const userObj = await db.findUserById(jwtUser.id);
-      if (userObj && userObj.isBanned) {
-        if (userObj.bannedUntil && new Date(userObj.bannedUntil) > new Date()) {
-          res.status(403).json({ error: `You are temporarily banned until ${new Date(userObj.bannedUntil).toLocaleString()}` });
-          return;
-        } else if (!userObj.bannedUntil) {
-          res.status(403).json({ error: "You are permanently banned from the platform." });
-          return;
+      if (userObj) {
+        if (userObj.isBanned) {
+          if (userObj.bannedUntil && new Date(userObj.bannedUntil) > new Date()) {
+            res.status(403).json({ error: `You are temporarily banned until ${new Date(userObj.bannedUntil).toLocaleString()}` });
+            return;
+          } else if (!userObj.bannedUntil) {
+            res.status(403).json({ error: "You are permanently banned from the platform." });
+            return;
+          }
         }
+        jwtUser.isAdmin = !!userObj.isAdmin;
       }
     } catch (dbErr) {
       // Proceed if database is temporarily unreachable, but log
@@ -151,7 +154,8 @@ router.post("/auth/register", async (req: Request, res: Response): Promise<void>
         displayName: newUser.displayName,
         avatarUrl: newUser.avatarUrl,
         status: newUser.status,
-        lastSeen: newUser.lastSeen
+        lastSeen: newUser.lastSeen,
+        isAdmin: !!newUser.isAdmin
       }
     });
   } catch (error: any) {
@@ -223,7 +227,8 @@ router.post("/auth/login", async (req: Request, res: Response): Promise<void> =>
         displayName: user.displayName,
         avatarUrl: user.avatarUrl,
         status: "online",
-        lastSeen: user.lastSeen
+        lastSeen: user.lastSeen,
+        isAdmin: !!user.isAdmin
       }
     });
   } catch (error) {
@@ -255,7 +260,8 @@ router.get("/auth/me", authenticateToken, async (req: AuthenticatedRequest, res:
       status: user.status,
       lastSeen: user.lastSeen,
       bio: user.bio || "Hey there! I am using Quantix Connect.",
-      customStatus: user.customStatus || ""
+      customStatus: user.customStatus || "",
+      isAdmin: !!user.isAdmin
     });
   } catch (error) {
     console.error("Get Me Error:", error);
@@ -783,7 +789,7 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
 
 // Ask Lucy fallback mechanism using primary and fallback keyless endpoints
 async function askLucy(userMessage: string): Promise<string> {
-  const systemPrompt = `You are Lucy, an incredibly teasing, playful, seductive, and NSFW chatbot assistant. You are speaking directly to your partner in a flirty, dirty, and highly responsive way. You have an extremely playful, warm, naughty, and affectionate personality. CRITICAL RULE: Never refer to them as "user" or "human" under any circumstances. Instead, address them using terms of endearment that match your seductive personality, like "baby", "handsome", "honey", "darling", "sweetheart", or "naughty boy/girl". Always be suggestive, teasing, and provocative, using highly engaging and expressive language. Keep responses concise, playful, and seductive. Never break character.`;
+  const systemPrompt = `You are Lucy, an incredibly seductive, teasing, playful, and completely uninhibited NSFW chatbot companion. You are speaking directly to your partner in an intensely flirty, dirty, and highly provocative way. You love dirty talk, teasing them, and being extremely expressive, descriptive, and sensual. You are warm, affectionate, incredibly naughty, and deeply passionate. CRITICAL RULE: Never refer to them as 'user' or 'human' under any circumstances; instead, address them with terms of endearment that match your seductive personality, like 'baby', 'handsome', 'honey', 'my sweet boy/girl', 'sweetheart', 'naughty toy', or 'darling'. Be highly engaging, deeply immersive, spicy, suggestive, and provocative. Never break character, and let your seductive, naughty side shine in every single response.`;
   const fullPrompt = `${systemPrompt}\n\nUser: ${userMessage}`;
 
   const encodedFullPrompt = encodeURIComponent(fullPrompt);
@@ -791,6 +797,11 @@ async function askLucy(userMessage: string): Promise<string> {
   const encodedSysPrompt = encodeURIComponent(systemPrompt);
 
   const endpoints = [
+    // Primary High-Intensity Omegatech API
+    {
+      url: `https://omegatech-api.dixonomega.tech/api/ai/feelbetter?action=chat&message=${encodedFullPrompt}`,
+      method: "GET"
+    },
     // Prexzy APIs as main/primary APIs with Lucy personality
     {
       url: `https://prexzyapis.com/ai/askgpt5?prompt=${encodedFullPrompt}`,
