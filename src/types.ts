@@ -7,6 +7,7 @@ export interface User {
   lastSeen: string;
   bio?: string;
   customStatus?: string;
+  isAdmin?: boolean;
 }
 
 export interface Chat {

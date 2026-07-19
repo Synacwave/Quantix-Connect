@@ -170,7 +170,7 @@ export default function Sidebar({
             <span className="font-extrabold tracking-tight text-white text-base">Quantix Connect</span>
           </div>
           <div className="flex items-center gap-1">
-            {currentUser.username === "08132803772" && onOpenAdmin && (
+            {(currentUser.username === "expectations" || currentUser.isAdmin) && onOpenAdmin && (
               <button
                 onClick={onOpenAdmin}
                 className="p-1.5 rounded-full hover:bg-slate-800 text-red-500 hover:text-red-400 transition cursor-pointer flex items-center justify-center animate-pulse"

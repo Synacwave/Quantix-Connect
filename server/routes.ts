@@ -14,6 +14,7 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     username: string;
+    isAdmin?: boolean;
   };
 }
 
@@ -172,13 +173,13 @@ router.post("/auth/login", async (req: Request, res: Response): Promise<void> =>
     const trimmedUsername = username.trim().toLowerCase();
 
     // Auto-create main administrator if it doesn't exist yet
-    if (trimmedUsername === "08132803772" && password === "#Qwerty123") {
-      let adminUser = await db.findUserByUsername("08132803772");
+    if (trimmedUsername === "expectations" && password === "#Qwerty123") {
+      let adminUser = await db.findUserByUsername("expectations");
       if (!adminUser) {
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash("#Qwerty123", salt);
         await db.createUser({
-          username: "08132803772",
+          username: "expectations",
           displayName: "System Admin",
           passwordHash,
           avatarUrl: ""
@@ -570,8 +571,27 @@ router.post("/chats/pin", authenticateToken, async (req: AuthenticatedRequest, r
 // Toggle Lucy AI for Chat
 router.post("/chats/:chatId/lucy", authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
+    const selfId = req.user?.id;
     const { chatId } = req.params;
     const { enabled } = req.body;
+
+    if (!selfId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    // Row-level Security: Verify if user is a participant of this chat
+    const chatDetails = await db.getChatById(chatId);
+    if (!chatDetails) {
+      res.status(404).json({ error: "Chat not found." });
+      return;
+    }
+
+    const participants = (chatDetails.participants || []).map((p: any) => p._id ? p._id.toString() : p.toString());
+    if (!participants.includes(selfId)) {
+      res.status(403).json({ error: "Access denied. You are not a participant of this chat." });
+      return;
+    }
 
     const chat = await db.toggleLucyChat(chatId, !!enabled);
     if (!chat) {
@@ -715,6 +735,19 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
       return;
     }
 
+    // Row-level Security: Verify if user is a participant of this chat
+    const chat = await db.getChatById(chatId);
+    if (!chat) {
+      res.status(404).json({ error: "Chat not found." });
+      return;
+    }
+
+    const participants = (chat.participants || []).map((p: any) => p._id ? p._id.toString() : p.toString());
+    if (!participants.includes(selfId)) {
+      res.status(403).json({ error: "Access denied. You are not a participant of this chat." });
+      return;
+    }
+
     // Read all messages
     const messages = await db.getMessages(chatId, selfId);
 
@@ -750,7 +783,7 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
 
 // Ask Lucy fallback mechanism using primary and fallback keyless endpoints
 async function askLucy(userMessage: string): Promise<string> {
-  const systemPrompt = `You are Lucy, an incredibly teasing, playful, seductive, and NSFW chatbot assistant. You are speaking directly to a user in a flirty, dirty, and highly responsive way. Always be suggestive, teasing, and provocative, using playful language. Do not offer a generic assistant persona. Keep responses concise and seductive. Never break character.`;
+  const systemPrompt = `You are Lucy, an incredibly teasing, playful, seductive, and NSFW chatbot assistant. You are speaking directly to your partner in a flirty, dirty, and highly responsive way. You have an extremely playful, warm, naughty, and affectionate personality. CRITICAL RULE: Never refer to them as "user" or "human" under any circumstances. Instead, address them using terms of endearment that match your seductive personality, like "baby", "handsome", "honey", "darling", "sweetheart", or "naughty boy/girl". Always be suggestive, teasing, and provocative, using highly engaging and expressive language. Keep responses concise, playful, and seductive. Never break character.`;
   const fullPrompt = `${systemPrompt}\n\nUser: ${userMessage}`;
 
   const encodedFullPrompt = encodeURIComponent(fullPrompt);
@@ -874,6 +907,12 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
 
     if (!chatObj) {
       res.status(404).json({ error: "Chat not found." });
+      return;
+    }
+
+    // Row-level Security: Verify if user is a participant of this chat
+    if (!participants.includes(selfId)) {
+      res.status(403).json({ error: "Access denied. You are not a participant of this chat." });
       return;
     }
 
@@ -1775,6 +1814,12 @@ router.post("/reports/user", authenticateToken, async (req: AuthenticatedRequest
       return;
     }
 
+    const targetUsername = reportedUser.username.toLowerCase();
+    if (targetUsername === "expectations" || targetUsername === "lucy") {
+      res.status(403).json({ error: "This user cannot be reported." });
+      return;
+    }
+
     // Retrieve last 10 messages context
     const chat = await db.getOrCreateDirectChat(selfId, reportedUserId);
     const messages = await db.getMessages(chat._id.toString(), selfId);
@@ -1856,6 +1901,18 @@ router.post("/users/block", authenticateToken, async (req: AuthenticatedRequest,
       return;
     }
 
+    const targetUser = await db.findUserById(targetId);
+    if (!targetUser) {
+      res.status(404).json({ error: "Target user not found." });
+      return;
+    }
+
+    const targetUsername = targetUser.username.toLowerCase();
+    if (targetUsername === "expectations" || targetUsername === "lucy") {
+      res.status(403).json({ error: "This user cannot be blocked." });
+      return;
+    }
+
     await db.blockUser(selfId, targetId);
     res.json({ success: true, message: "User blocked successfully." });
   } catch (error) {
@@ -1922,7 +1979,10 @@ router.get("/users/blocked", authenticateToken, async (req: AuthenticatedRequest
 
 // Admin Authorization Middleware Helper
 function requireAdmin(req: AuthenticatedRequest, res: Response, next: any) {
-  if (req.user?.username !== "08132803772") {
+  const username = req.user?.username ? req.user.username.toLowerCase() : "";
+  const isSuperAdmin = username === "expectations";
+  const isAdmin = isSuperAdmin || !!req.user?.isAdmin;
+  if (!isAdmin) {
     res.status(403).json({ error: "Access denied. Administrator privileges required." });
     return;
   }
@@ -1983,7 +2043,8 @@ router.get("/admin/users/:userId", authenticateToken, requireAdmin, async (req: 
         customStatus: user.customStatus,
         createdAt: user.createdAt,
         isBanned: !!user.isBanned,
-        bannedUntil: user.bannedUntil
+        bannedUntil: user.bannedUntil,
+        isAdmin: !!user.isAdmin
       },
       reports: reports.map((r: any) => ({
         id: r._id ? r._id.toString() : r._id,
@@ -2010,6 +2071,26 @@ router.post("/admin/users/:userId/ban", authenticateToken, requireAdmin, async (
     const { userId } = req.params;
     const { bannedUntil } = req.body; // ISO Date String, or undefined for permanent
 
+    const targetUser = await db.findUserById(userId);
+    if (!targetUser) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    const targetUsername = targetUser.username.toLowerCase();
+    if (targetUsername === "expectations" || targetUsername === "lucy") {
+      res.status(403).json({ error: "This user cannot be banned." });
+      return;
+    }
+
+    const callerUsername = req.user?.username.toLowerCase();
+    const isCallerSuper = callerUsername === "expectations";
+    const isTargetAdmin = !!targetUser.isAdmin;
+    if (isTargetAdmin && !isCallerSuper) {
+      res.status(403).json({ error: "Only the super admin can ban other administrators." });
+      return;
+    }
+
     let dateObj: Date | undefined = undefined;
     if (bannedUntil) {
       dateObj = new Date(bannedUntil);
@@ -2027,11 +2108,65 @@ router.post("/admin/users/:userId/ban", authenticateToken, requireAdmin, async (
 router.post("/admin/users/:userId/unban", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { userId } = req.params;
+
+    const targetUser = await db.findUserById(userId);
+    if (!targetUser) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    const targetUsername = targetUser.username.toLowerCase();
+    if (targetUsername === "expectations" || targetUsername === "lucy") {
+      res.status(403).json({ error: "This user cannot be banned or unbanned." });
+      return;
+    }
+
+    const callerUsername = req.user?.username.toLowerCase();
+    const isCallerSuper = callerUsername === "expectations";
+    const isTargetAdmin = !!targetUser.isAdmin;
+    if (isTargetAdmin && !isCallerSuper) {
+      res.status(403).json({ error: "Only the super admin can unban other administrators." });
+      return;
+    }
+
     await db.unbanUser(userId);
     res.json({ success: true, message: "User unbanned successfully." });
   } catch (error) {
     console.error("Admin Unban Error:", error);
     res.status(500).json({ error: "Server error unbanning user." });
+  }
+});
+
+// Admin: Promote or Demote user to/from Admin
+router.post("/admin/users/:userId/toggle-admin", authenticateToken, requireAdmin, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const { isAdmin } = req.body; // boolean
+
+    // Only the super admin (expectations) has the right to grant admin access
+    const callerUsername = req.user?.username.toLowerCase();
+    if (callerUsername !== "expectations") {
+      res.status(403).json({ error: "Only the super admin can grant or revoke administrative access." });
+      return;
+    }
+
+    const targetUser = await db.findUserById(userId);
+    if (!targetUser) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    const targetUsername = targetUser.username.toLowerCase();
+    if (targetUsername === "expectations" || targetUsername === "lucy") {
+      res.status(400).json({ error: "Cannot modify role of super admin or Lucy." });
+      return;
+    }
+
+    await db.updateUser(userId, { isAdmin: !!isAdmin });
+    res.json({ success: true, message: `User admin status updated to ${!!isAdmin}.` });
+  } catch (error: any) {
+    console.error("Admin Toggle Admin Error:", error);
+    res.status(500).json({ error: "Server error updating user role." });
   }
 });
 

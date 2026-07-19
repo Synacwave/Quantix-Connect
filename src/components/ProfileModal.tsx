@@ -10,7 +10,8 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ user, onClose, onStartDirectChat }: ProfileModalProps) {
-  const isLucy = user.id === "0000000000000000000010c1" || user.id === "00000000000000000000lucy" || user.username === "lucy";
+  const isLucy = user.id === "0000000000000000000010c1" || user.id === "00000000000000000000lucy" || user.username.toLowerCase() === "lucy";
+  const isSuperAdmin = user.username.toLowerCase() === "expectations";
 
   const [isBlocked, setIsBlocked] = useState(false);
   const [loadingBlock, setLoadingBlock] = useState(true);
@@ -23,7 +24,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
 
   useEffect(() => {
     async function checkBlockStatus() {
-      if (isLucy) {
+      if (isLucy || isSuperAdmin) {
         setLoadingBlock(false);
         return;
       }
@@ -258,7 +259,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
               )}
 
               {/* Block & Report User buttons */}
-              {!isLucy && (
+              {!isLucy && !isSuperAdmin && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={handleToggleBlock}
@@ -275,11 +276,8 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                     onClick={() => setShowReportForm(true)}
                     className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold py-2.5 px-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <div className="flex items-center gap-0.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
-                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
-                    </div>
-                    <span>⚠️⚠️ Report</span>
+                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-500" />
+                    <span>⚠️ Report</span>
                   </button>
                 </div>
               )}

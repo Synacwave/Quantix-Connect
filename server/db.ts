@@ -20,7 +20,8 @@ const UserSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   isBanned: { type: Boolean, default: false },
   bannedUntil: { type: Date },
-  blockedUsers: [{ type: String, default: [] }]
+  blockedUsers: [{ type: String, default: [] }],
+  isAdmin: { type: Boolean, default: false }
 });
 
 const ChatSchema = new mongoose.Schema({
@@ -148,6 +149,7 @@ interface LocalUser {
   isBanned?: boolean;
   bannedUntil?: string;
   blockedUsers?: string[];
+  isAdmin?: boolean;
 }
 
 interface LocalChat {
@@ -248,6 +250,17 @@ function generateId() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
+export function adjustUser(user: any) {
+  if (!user) return user;
+  const username = user.username ? user.username.toLowerCase() : "";
+  const isSuperAdmin = username === "expectations";
+  const isAdmin = isSuperAdmin || !!user.isAdmin;
+  if (isAdmin && !user.displayName.endsWith(" ♠︎")) {
+    user.displayName = user.displayName + " ♠︎";
+  }
+  return user;
+}
+
 // --- UNIFIED DATABASE ADAPTER ---
 // This class routes queries to MongoDB or the Local DB depending on settings.
 
@@ -271,10 +284,7 @@ export const db = {
       const u = await MongoUser.findById(id).select("-passwordHash");
       if (u) {
         const obj = u.toObject ? u.toObject() : u;
-        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
-          obj.displayName = obj.displayName + " ♠︎";
-        }
-        return obj;
+        return adjustUser(obj);
       }
       return null;
     } else {
@@ -282,10 +292,7 @@ export const db = {
       const user = store.users.find(u => u._id === id);
       if (!user) return null;
       const { passwordHash, ...rest } = user;
-      if (rest.username === "08132803772" && !rest.displayName.endsWith(" ♠︎")) {
-        rest.displayName = rest.displayName + " ♠︎";
-      }
-      return rest;
+      return adjustUser(rest);
     }
   },
 
@@ -308,10 +315,7 @@ export const db = {
       const u = await MongoUser.findOne({ username: lowerUsername });
       if (u) {
         const obj = u.toObject ? u.toObject() : u;
-        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
-          obj.displayName = obj.displayName + " ♠︎";
-        }
-        return obj;
+        return adjustUser(obj);
       }
       return null;
     } else {
@@ -319,10 +323,7 @@ export const db = {
       const user = store.users.find(u => u.username.toLowerCase() === lowerUsername) || null;
       if (user) {
         const cloned = { ...user };
-        if (cloned.username === "08132803772" && !cloned.displayName.endsWith(" ♠︎")) {
-          cloned.displayName = cloned.displayName + " ♠︎";
-        }
-        return cloned;
+        return adjustUser(cloned);
       }
       return null;
     }
@@ -362,7 +363,12 @@ export const db = {
 
   async updateUser(id: string, updates: Partial<LocalUser>) {
     if (isMongoDB && MongoUser) {
-      return MongoUser.findByIdAndUpdate(id, updates, { new: true }).select("-passwordHash");
+      const u = await MongoUser.findByIdAndUpdate(id, updates, { new: true }).select("-passwordHash");
+      if (u) {
+        const obj = u.toObject ? u.toObject() : u;
+        return adjustUser(obj);
+      }
+      return null;
     } else {
       const store = readLocalDB();
       const idx = store.users.findIndex(u => u._id === id);
@@ -370,7 +376,7 @@ export const db = {
       store.users[idx] = { ...store.users[idx], ...updates };
       writeLocalDB(store);
       const { passwordHash, ...rest } = store.users[idx];
-      return rest;
+      return adjustUser(rest);
     }
   },
 
@@ -386,10 +392,7 @@ export const db = {
       }).select("-passwordHash").limit(20);
       return users.map((u: any) => {
         const obj = u.toObject ? u.toObject() : u;
-        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
-          obj.displayName = obj.displayName + " ♠︎";
-        }
-        return obj;
+        return adjustUser(obj);
       });
     } else {
       const store = readLocalDB();
@@ -397,10 +400,7 @@ export const db = {
         .filter(u => u._id !== excludeId && (u.username.toLowerCase().includes(q) || u.displayName.toLowerCase().includes(q)))
         .map(({ passwordHash, ...rest }) => {
           const cloned = { ...rest };
-          if (cloned.username === "08132803772" && !cloned.displayName.endsWith(" ♠︎")) {
-            cloned.displayName = cloned.displayName + " ♠︎";
-          }
-          return cloned;
+          return adjustUser(cloned);
         })
         .slice(0, 20);
     }
@@ -413,7 +413,13 @@ export const db = {
         .populate("participants", "-passwordHash")
         .populate("lastMessage")
         .sort({ updatedAt: -1 });
-      return chats;
+      return chats.map((c: any) => {
+        const obj = c.toObject ? c.toObject() : c;
+        if (obj.participants) {
+          obj.participants = obj.participants.map((p: any) => adjustUser(p));
+        }
+        return obj;
+      });
     } else {
       const store = readLocalDB();
       const chats = store.chats.filter(c => c.participants.includes(userId));
@@ -437,7 +443,7 @@ export const db = {
           const user = store.users.find(u => u._id === pid);
           if (!user) return null;
           const { passwordHash, ...rest } = user;
-          return rest;
+          return adjustUser(rest);
         }).filter(Boolean);
 
         // Fetch last message details
@@ -471,6 +477,14 @@ export const db = {
         });
         await chat.save();
         chat = await MongoChat.findById(chat._id).populate("participants", "-passwordHash");
+      }
+      
+      if (chat) {
+        const obj = chat.toObject ? chat.toObject() : chat;
+        if (obj.participants) {
+          obj.participants = obj.participants.map((p: any) => adjustUser(p));
+        }
+        return obj;
       }
       return chat;
     } else {
@@ -513,13 +527,22 @@ export const db = {
         const user = store.users.find(u => u._id === pid);
         if (!user) return null;
         const { passwordHash, ...rest } = user;
-        return rest;
+        return adjustUser(rest);
       }).filter(Boolean);
 
       return {
         ...chat,
         participants: participantsPopulated
       };
+    }
+  },
+
+  async getChatById(chatId: string) {
+    if (isMongoDB && MongoChat) {
+      return MongoChat.findById(chatId);
+    } else {
+      const store = readLocalDB();
+      return store.chats.find(c => c._id === chatId) || null;
     }
   },
 
@@ -890,19 +913,13 @@ export const db = {
       const users = await MongoUser.find({}).select("-passwordHash");
       return users.map((u: any) => {
         const obj = u.toObject ? u.toObject() : u;
-        if (obj.username === "08132803772" && !obj.displayName.endsWith(" ♠︎")) {
-          obj.displayName = obj.displayName + " ♠︎";
-        }
-        return obj;
+        return adjustUser(obj);
       });
     } else {
       const store = readLocalDB();
       return store.users.map(({ passwordHash, ...rest }) => {
         const cloned = { ...rest };
-        if (cloned.username === "08132803772" && !cloned.displayName.endsWith(" ♠︎")) {
-          cloned.displayName = cloned.displayName + " ♠︎";
-        }
-        return cloned;
+        return adjustUser(cloned);
       });
     }
   }
