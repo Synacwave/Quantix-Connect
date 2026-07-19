@@ -704,11 +704,7 @@ async function askLucy(userMessage: string): Promise<string> {
   const encodedSysPrompt = encodeURIComponent(systemPrompt);
 
   const endpoints = [
-    // Primary Endpoints (GET) - Prioritizing gpt-5 and gptlogic
-    {
-      url: `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
-      method: "GET"
-    },
+    // Primary Endpoints (GET) - Prioritizing gpt-5 
     {
       url: `https://api-rebix.vercel.app/api/gptlogic?q=${encodedUserMsg}&prompt=${encodedSysPrompt}`,
       method: "GET"
