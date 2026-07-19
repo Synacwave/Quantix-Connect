@@ -848,12 +848,12 @@ async function askLucy(userMessage: string): Promise<string> {
           else if (data.results) {
             reply = typeof data.results === "string" ? data.results : (data.results.text || "");
           }
-          else if (data.result) reply = data.result;
-          else if (data.response) reply = data.response;
-          else if (data.message) reply = data.message;
           else if (data.reply) reply = data.reply;
+          else if (data.response) reply = data.response;
+          else if (data.result) reply = data.result;
           else if (data.content) reply = data.content;
           else if (data.text) reply = data.text;
+          else if (data.message) reply = data.message;
           else if (data.data) {
             reply = typeof data.data === "string" ? data.data : (data.data.result || data.data.response || data.data.message || "");
           }
@@ -2174,6 +2174,13 @@ router.post("/admin/users/:userId/toggle-admin", authenticateToken, requireAdmin
     }
 
     await db.updateUser(userId, { isAdmin: !!isAdmin });
+
+    // Emit real-time event to the user's personal room
+    const io = getIO();
+    if (io) {
+      io.to(`user_${userId}`).emit("admin_status_updated", { isAdmin: !!isAdmin });
+    }
+
     res.json({ success: true, message: `User admin status updated to ${!!isAdmin}.` });
   } catch (error: any) {
     console.error("Admin Toggle Admin Error:", error);

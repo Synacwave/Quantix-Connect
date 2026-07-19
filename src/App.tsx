@@ -171,6 +171,17 @@ export default function App() {
       console.log("🟢 Quantix Socket: Connected to real-time server!");
     });
 
+    socket.on("admin_status_updated", ({ isAdmin }: { isAdmin: boolean }) => {
+      console.log("🔑 Admin status updated:", isAdmin);
+      setCurrentUser((prevUser) => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          isAdmin
+        };
+      });
+    });
+
     // Real-time user presence updates
     socket.on("user_status", ({ userId, status, lastSeen }: { userId: string; status: "online" | "offline"; lastSeen: string }) => {
       // Update status in current chats list
