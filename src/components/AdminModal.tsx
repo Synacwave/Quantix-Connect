@@ -271,22 +271,22 @@ export default function AdminModal({ onClose }: AdminModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 select-none">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 select-none animate-fade-in">
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 15 }}
-        className="w-full max-w-5xl h-[85vh] bg-slate-950 border border-red-500/25 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+        className="w-full max-w-5xl h-[85vh] bg-[#0D0D0D] border border-[#1D1D1D] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-slate-900/40 border-b border-red-500/10 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 bg-[#0B0B0B] border-b border-[#1D1D1D] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 text-red-500">
             <ShieldAlert className="w-5 h-5 animate-pulse" />
-            <h2 className="text-lg font-extrabold tracking-wide text-white uppercase">Quantix Admin Backdoor</h2>
+            <h2 className="text-lg font-extrabold tracking-wide text-white uppercase font-sans">Quantix Admin Backdoor</h2>
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-[#181818] text-slate-400 hover:text-white transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -295,28 +295,28 @@ export default function AdminModal({ onClose }: AdminModalProps) {
         {/* Modal Body */}
         <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
           {/* Left panel: Users Search List */}
-          <div className="w-full md:w-2/5 border-r border-slate-900 flex flex-col min-h-0">
-            <div className="p-4 border-b border-slate-900 shrink-0">
+          <div className="w-full md:w-2/5 border-r border-[#1D1D1D] flex flex-col min-h-0 bg-[#0D0D0D]">
+            <div className="p-4 border-b border-[#1D1D1D] shrink-0">
               <div className="relative">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search user list..."
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-red-500/30 transition-all"
+                  className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-[#707070] focus:outline-none focus:border-red-500/45 transition-all"
                 />
-                <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                <Search className="w-4 h-4 text-[#707070] absolute left-3 top-3.5" />
               </div>
             </div>
 
             {/* Users list */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin">
               {loadingUsers ? (
                 <div className="flex items-center justify-center h-48">
                   <span className="w-6 h-6 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin"></span>
                 </div>
               ) : users.length === 0 ? (
-                <div className="text-center text-xs text-slate-500 py-12">No users found.</div>
+                <div className="text-center text-xs text-[#707070] py-12">No users found.</div>
               ) : (
                 users.map((u) => {
                   const isUserBanned = u.isBanned;
@@ -326,32 +326,32 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                       onClick={() => setSelectedUserId(u.id)}
                       className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition cursor-pointer ${
                         selectedUserId === u.id 
-                          ? "bg-red-950/20 border border-red-500/20" 
-                          : "hover:bg-slate-900/50 border border-transparent"
+                          ? "bg-red-950/20 border border-red-500/30" 
+                          : "hover:bg-[#181818] border border-transparent"
                       }`}
                     >
                       <div className="relative">
                         {u.avatarUrl ? (
-                          <img src={u.avatarUrl} alt={u.displayName} className="w-10 h-10 rounded-full object-cover" />
+                          <img src={u.avatarUrl} alt={u.displayName} className="w-10 h-10 rounded-full object-cover border border-[#1D1D1D]" />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-sm">
+                          <div className="w-10 h-10 rounded-full bg-[#141414] border border-[#1D1D1D] flex items-center justify-center text-[#A8A8A8] font-bold text-sm">
                             {u.displayName.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-950 ${
-                          isUserBanned ? "bg-red-500" : u.status === "online" ? "bg-emerald-500" : "bg-slate-500"
+                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#090909] ${
+                          isUserBanned ? "bg-red-500" : u.status === "online" ? "bg-emerald-500" : "bg-[#707070]"
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-bold text-white truncate">{u.displayName}</p>
                           {isUserBanned && (
-                            <span className="text-[9px] bg-red-950/40 text-red-400 border border-red-500/20 px-1.5 py-0.5 rounded font-mono uppercase">
+                            <span className="text-[9px] bg-red-950/40 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded font-mono uppercase">
                               Banned
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-500 truncate">@{u.username}</p>
+                        <p className="text-[10px] text-[#707070] truncate">@{u.username}</p>
                       </div>
                     </button>
                   );
@@ -361,29 +361,29 @@ export default function AdminModal({ onClose }: AdminModalProps) {
           </div>
 
           {/* Right panel: User Details, Reports & Ban Trigger */}
-          <div className="flex-1 min-h-0 flex flex-col bg-slate-950/40 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 min-h-0 flex flex-col bg-[#090909] overflow-y-auto p-6 space-y-6 scrollbar-thin">
             {!selectedUserId ? (
               <div className="space-y-6">
                 {/* Global Broadcast System */}
-                <div className="bg-slate-900/30 border border-red-500/15 rounded-3xl p-6 space-y-4">
+                <div className="bg-[#101010] border border-[#1D1D1D] rounded-3xl p-6 space-y-4">
                   <div className="flex items-center gap-2.5 text-red-500">
                     <ShieldAlert className="w-5 h-5 animate-pulse" />
                     <h3 className="text-sm font-extrabold text-white tracking-widest uppercase font-sans">
                       Global System Broadcast Dispatcher
                     </h3>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className="text-xs text-[#A8A8A8] leading-relaxed">
                     Send an official system announcement directly to every registered user on Quantix Connect. The message will appear with an official admin broadcast badge and a deep shadow black glow.
                   </p>
 
                   <div className="space-y-1.5 mt-2">
-                    <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Broadcast Message</label>
+                    <label className="text-[10px] text-[#707070] font-bold uppercase tracking-wider">Broadcast Message</label>
                     <textarea
                       rows={4}
                       value={broadcastText}
                       onChange={(e) => setBroadcastText(e.target.value)}
                       placeholder="Type your official administrative broadcast message here..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500/30 transition-all placeholder:text-slate-600 resize-none"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500/30 transition-all placeholder:text-[#707070] resize-none"
                     />
                   </div>
 
@@ -417,9 +417,9 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center justify-center text-slate-500 space-y-2 py-12 bg-slate-900/10 border border-slate-900/50 rounded-2xl">
-                  <User className="w-10 h-10 text-slate-700" />
-                  <p className="text-xs font-medium">Select a user from the left pane to access user-specific moderator actions.</p>
+                <div className="flex flex-col items-center justify-center text-[#707070] space-y-2 py-12 bg-[#101010] border border-[#1D1D1D] rounded-2xl">
+                  <User className="w-10 h-10 text-[#707070]" />
+                  <p className="text-xs font-medium text-center px-4">Select a user from the left pane to access user-specific moderator actions.</p>
                 </div>
               </div>
             ) : loadingDetail ? (
@@ -429,18 +429,18 @@ export default function AdminModal({ onClose }: AdminModalProps) {
             ) : selectedUserDetail ? (
               <>
                 {/* User Header Info Card */}
-                <div className="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 flex items-center gap-4">
+                <div className="bg-[#101010] border border-[#1D1D1D] rounded-2xl p-5 flex items-center gap-4">
                   {selectedUserDetail.avatarUrl ? (
-                    <img src={selectedUserDetail.avatarUrl} alt={selectedUserDetail.displayName} className="w-16 h-16 rounded-full object-cover border-2 border-slate-800" />
+                    <img src={selectedUserDetail.avatarUrl} alt={selectedUserDetail.displayName} className="w-16 h-16 rounded-full object-cover border-2 border-[#1D1D1D]" />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-2xl border-2 border-slate-800">
+                    <div className="w-16 h-16 rounded-full bg-[#141414] flex items-center justify-center text-[#A8A8A8] font-bold text-2xl border-2 border-[#1D1D1D]">
                       {selectedUserDetail.displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-white leading-tight">{selectedUserDetail.displayName}</h3>
                     <p className="text-xs text-red-400 font-medium">@{selectedUserDetail.username}</p>
-                    <p className="text-[10px] text-slate-500 mt-1">ID: {selectedUserDetail.id}</p>
+                    <p className="text-[10px] text-[#707070] mt-1">ID: {selectedUserDetail.id}</p>
                   </div>
                   {selectedUserDetail.isBanned && (
                     <div className="text-right shrink-0">
@@ -448,7 +448,7 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                         <Ban className="w-3 h-3" /> Banned
                       </span>
                       {selectedUserDetail.bannedUntil && (
-                        <p className="text-[10px] text-slate-500 mt-1">
+                        <p className="text-[10px] text-[#707070] mt-1">
                           Until: {new Date(selectedUserDetail.bannedUntil).toLocaleDateString()}
                         </p>
                       )}
@@ -476,13 +476,13 @@ export default function AdminModal({ onClose }: AdminModalProps) {
 
                 {/* Admin Promotion controls (Super Admin Only) */}
                 {isSuperAdmin && (
-                  <div className="bg-slate-900/20 border border-slate-900 rounded-2xl p-5 space-y-4">
+                  <div className="bg-[#101010] border border-[#1D1D1D] rounded-2xl p-5 space-y-4">
                     <h4 className="text-xs font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-blue-400" />
+                      <Shield className="w-4 h-4 text-[#2A5FFF]" />
                       Administrative Role Management
                     </h4>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <p className="text-xs text-slate-400 max-w-md">
+                      <p className="text-xs text-[#A8A8A8] max-w-md">
                         {selectedUserDetail.isAdmin
                           ? "This user currently has Administrator privileges on Quantix Connect."
                           : "Promote this user to grant them access to the Administrative Dashboard and Moderation controls."}
@@ -493,7 +493,7 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                         className={`font-bold px-5 py-2.5 rounded-xl text-xs transition active:scale-[0.98] cursor-pointer flex items-center gap-1.5 shadow-md shrink-0 ${
                           selectedUserDetail.isAdmin
                             ? "bg-amber-700 hover:bg-amber-600 text-white"
-                            : "bg-blue-600 hover:bg-blue-500 text-white"
+                            : "bg-[#1B3A7A] hover:bg-[#224A99] text-white"
                         }`}
                       >
                         {actionLoading ? (
@@ -515,7 +515,7 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                 )}
 
                 {/* Moderation Controls (Ban/Unban) */}
-                <div className="bg-slate-900/20 border border-slate-900 rounded-2xl p-5 space-y-4">
+                <div className="bg-[#101010] border border-[#1D1D1D] rounded-2xl p-5 space-y-4">
                   <h4 className="text-xs font-extrabold text-white tracking-widest uppercase flex items-center gap-2">
                     <ShieldAlert className="w-4 h-4 text-red-400" />
                     Moderation Command Center
@@ -523,7 +523,7 @@ export default function AdminModal({ onClose }: AdminModalProps) {
 
                   {selectedUserDetail.isBanned ? (
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-slate-400">This account is currently blocked from accessing the platform.</p>
+                      <p className="text-xs text-[#A8A8A8]">This account is currently blocked from accessing the platform.</p>
                       <button
                         onClick={handleUnbanUser}
                         disabled={actionLoading}
@@ -542,22 +542,22 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                   ) : (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                        <div className="flex items-center gap-2 bg-[#141414] p-3 rounded-xl border border-[#1D1D1D]">
                           <input
                             type="checkbox"
                             id="permBan"
                             checked={isPermanentBan}
                             onChange={(e) => setIsPermanentBan(e.target.checked)}
-                            className="rounded border-slate-800 bg-slate-950 text-red-600 focus:ring-red-500"
+                            className="rounded border-[#1D1D1D] bg-[#090909] text-red-600 focus:ring-red-500"
                           />
-                          <label htmlFor="permBan" className="text-xs text-slate-300 font-semibold cursor-pointer">
+                          <label htmlFor="permBan" className="text-xs text-[#A8A8A8] font-semibold cursor-pointer">
                             Permanent Ban / Indefinite Banishment
                           </label>
                         </div>
 
                         {!isPermanentBan && (
                           <div className="space-y-1">
-                            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ban Duration (Days)</label>
+                            <label className="text-[10px] text-[#707070] font-bold uppercase tracking-wider">Ban Duration (Days)</label>
                             <div className="flex items-center gap-3">
                               <input
                                 type="range"
@@ -565,9 +565,9 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                                 max="30"
                                 value={banDurationDays}
                                 onChange={(e) => setBanDurationDays(parseInt(e.target.value))}
-                                className="flex-1 accent-red-500"
+                                className="flex-1 accent-red-500 bg-[#141414]"
                               />
-                              <span className="text-xs font-mono text-white bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg">
+                              <span className="text-xs font-mono text-white bg-[#141414] border border-[#1D1D1D] px-2.5 py-1 rounded-lg">
                                 {banDurationDays}d
                               </span>
                             </div>
@@ -603,13 +603,13 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                   </h4>
 
                   {reports.length === 0 ? (
-                    <div className="bg-slate-900/10 border border-slate-900 rounded-2xl p-8 text-center text-xs text-slate-500">
+                    <div className="bg-[#101010] border border-[#1D1D1D] rounded-2xl p-8 text-center text-xs text-[#707070]">
                       No reports registered against this user.
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {reports.map((report) => (
-                        <div key={report.id} className="bg-slate-900/30 border border-slate-900 rounded-2xl p-5 space-y-4">
+                        <div key={report.id} className="bg-[#101010] border border-[#1D1D1D] rounded-2xl p-5 space-y-4">
                           <div className="flex items-start justify-between">
                             <div>
                               <span className="inline-block bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[10px] px-2 py-0.5 rounded-md font-mono uppercase font-bold tracking-wider mb-2">
@@ -617,15 +617,15 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                               </span>
                               {report.title && <h5 className="text-sm font-bold text-white">{report.title}</h5>}
                             </div>
-                            <span className="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
+                            <span className="text-[10px] text-[#707070] flex items-center gap-1 font-mono">
                               <Clock className="w-3 h-3" />
                               {new Date(report.createdAt).toLocaleString()}
                             </span>
                           </div>
 
                           <div className="space-y-1.5">
-                            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Report Description</label>
-                            <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-900 break-words whitespace-pre-wrap">
+                            <label className="text-[10px] text-[#707070] font-bold uppercase tracking-wider">Report Description</label>
+                            <p className="text-xs text-slate-300 leading-relaxed bg-[#141414] p-3 rounded-xl border border-[#1D1D1D] break-words whitespace-pre-wrap">
                               {report.description}
                             </p>
                           </div>
@@ -633,8 +633,8 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                           {/* Screenshot */}
                           {report.screenshot && (
                             <div className="space-y-1.5">
-                              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Screenshot Attachment</label>
-                              <div className="max-w-md rounded-xl overflow-hidden border border-slate-800">
+                              <label className="text-[10px] text-[#707070] font-bold uppercase tracking-wider">Screenshot Attachment</label>
+                              <div className="max-w-md rounded-xl overflow-hidden border border-[#1D1D1D]">
                                 <img src={report.screenshot} alt="Report attachment" className="w-full object-contain max-h-60 bg-black" />
                               </div>
                             </div>
@@ -643,11 +643,11 @@ export default function AdminModal({ onClose }: AdminModalProps) {
                           {/* Messages Context */}
                           {report.messagesContext && report.messagesContext.length > 0 && (
                             <div className="space-y-2">
-                              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Chat Log context (last 10 messages)</label>
-                              <div className="bg-slate-950 p-3 rounded-xl border border-slate-900 max-h-48 overflow-y-auto space-y-1.5 font-mono text-[11px] leading-relaxed">
+                              <label className="text-[10px] text-[#707070] font-bold uppercase tracking-wider">Chat Log context (last 10 messages)</label>
+                              <div className="bg-[#141414] p-3 rounded-xl border border-[#1D1D1D] max-h-48 overflow-y-auto space-y-1.5 font-mono text-[11px] leading-relaxed scrollbar-thin">
                                 {report.messagesContext.map((msg, i) => (
                                   <div key={i} className="text-slate-400 break-words">
-                                    <span className="text-slate-500">[{new Date(msg.createdAt).toLocaleTimeString()}]</span>{" "}
+                                    <span className="text-[#707070]">[{new Date(msg.createdAt).toLocaleTimeString()}]</span>{" "}
                                     <span className="text-red-400 font-bold">@{msg.senderUsername}:</span>{" "}
                                     <span className="text-white">{msg.text}</span>
                                   </div>

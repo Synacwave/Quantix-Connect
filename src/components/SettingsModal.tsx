@@ -151,25 +151,25 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 select-none">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 select-none animate-fade-in">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="w-full max-w-md bg-slate-950 border border-blue-500/20 rounded-3xl overflow-hidden shadow-2xl"
+        className="w-full max-w-md bg-[#0D0D0D] border border-[#1D1D1D] rounded-3xl overflow-hidden shadow-2xl"
       >
         {!showReportForm ? (
           <>
             {/* Header */}
-            <div className="px-6 py-4 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between">
+            <div className="px-6 py-4 bg-[#0B0B0B] border-b border-[#1D1D1D] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-blue-500 animate-spin-slow" />
-                <h2 className="text-lg font-bold text-white">Quantix Settings</h2>
+                <Settings className="w-5 h-5 text-[#2A5FFF] animate-spin-slow" />
+                <h2 className="text-lg font-bold text-white tracking-tight">Quantix Settings</h2>
               </div>
               <button 
                 onClick={onClose}
-                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-[#181818] text-slate-400 hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -193,14 +193,14 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
               <div className="flex flex-col items-center gap-2">
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-24 h-24 rounded-full border-2 border-blue-500/30 hover:border-blue-500/60 bg-slate-900 flex flex-col items-center justify-center cursor-pointer overflow-hidden transition relative group shadow-lg"
+                  className="w-24 h-24 rounded-full border-2 border-[#1D1D1D] hover:border-[#2A5FFF]/50 bg-[#141414] flex flex-col items-center justify-center cursor-pointer overflow-hidden transition relative group shadow-lg"
                 >
                   {avatarBase64 ? (
                     <img src={avatarBase64} alt="New Avatar Preview" className="w-full h-full object-cover" />
                   ) : user.avatarUrl ? (
                     <img src={user.avatarUrl} alt="Current Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-2xl font-bold">
+                    <div className="w-full h-full bg-[#141414] border border-[#1D1D1D] flex items-center justify-center text-[#2A5FFF] text-2xl font-bold">
                       {user.displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -208,7 +208,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                     <Upload className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-500">Click to change profile image</span>
+                <span className="text-[10px] text-[#707070]">Click to change profile image</span>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -221,59 +221,59 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
               <div className="space-y-4">
                 {/* Username (Non-Editable) */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-400 tracking-wide">Username</label>
-                  <div className="w-full bg-slate-900/50 border border-slate-900 text-slate-500 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
-                    <UserIcon className="w-4 h-4" />
+                  <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Username</label>
+                  <div className="w-full bg-[#090909] border border-[#1D1D1D] text-[#707070] rounded-xl px-4 py-3 text-sm flex items-center gap-2">
+                    <UserIcon className="w-4 h-4 text-[#707070]" />
                     <span>@{user.username}</span>
                   </div>
                 </div>
 
                 {/* Display Name Input */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-400 tracking-wide">Display Name</label>
+                  <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Display Name</label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Display Name"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/20 transition-all"
                   />
                 </div>
 
                 {/* Custom Status Input */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Custom Status</label>
-                    <span className="text-[10px] text-slate-500">e.g., 🚀 coding away</span>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Custom Status</label>
+                    <span className="text-[10px] text-[#707070]">e.g., 🚀 coding away</span>
                   </div>
                   <input
                     type="text"
                     value={customStatus}
                     onChange={(e) => setCustomStatus(e.target.value)}
                     placeholder="What's your vibe today?"
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/20 transition-all"
                   />
                 </div>
 
                 {/* Bio / About Input */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-400 tracking-wide">About (Bio)</label>
+                  <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">About (Bio)</label>
                   <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="Write a short bio about yourself..."
                     rows={2}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                    className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/20 transition-all resize-none"
                   />
                 </div>
               </div>
 
               {/* Report an Issue Button Option at bottom */}
-              <div className="border-t border-slate-900 pt-4">
+              <div className="border-t border-[#1D1D1D] pt-4">
                 <button
                   type="button"
                   onClick={() => setShowReportForm(true)}
-                  className="w-full bg-slate-900/60 hover:bg-slate-900 text-red-400 hover:text-red-300 border border-slate-800 hover:border-red-500/20 rounded-xl py-3 text-xs font-medium transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-[#141414] hover:bg-[#181818] text-red-400 hover:text-red-300 border border-[#1D1D1D] hover:border-red-500/20 rounded-xl py-3 text-xs font-medium transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>🚩 Report an Issue</span>
                 </button>
@@ -284,7 +284,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="w-1/3 bg-red-950/40 border border-red-500/20 text-red-400 font-medium py-3 rounded-xl text-xs transition hover:bg-red-950/70 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-1/3 bg-red-950/20 border border-red-500/10 text-red-400 font-medium py-3 rounded-xl text-xs transition hover:bg-red-950/40 active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Log Out</span>
@@ -293,7 +293,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-2/3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition shadow-[0_4px_12px_rgba(37,99,235,0.2)] flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-2/3 bg-[#1B3A7A] hover:bg-[#224A99] active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {loading ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -310,10 +310,10 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
         ) : (
           <>
             {/* Header */}
-            <div className="px-6 py-4 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between">
+            <div className="px-6 py-4 bg-[#0B0B0B] border-b border-[#1D1D1D] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🚩</span>
-                <h2 className="text-lg font-bold text-white">Report an Issue</h2>
+                <h2 className="text-lg font-bold text-white tracking-tight">Report an Issue</h2>
               </div>
               <button 
                 onClick={() => {
@@ -324,7 +324,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                   setIssueDescription("");
                   setIssueScreenshot("");
                 }}
-                className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-[#181818] text-slate-400 hover:text-white transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -348,24 +348,24 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                 <>
                   {/* Title */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Issue Title</label>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Issue Title</label>
                     <input
                       type="text"
                       required
                       value={issueTitle}
                       onChange={(e) => setIssueTitle(e.target.value)}
                       placeholder="Short summary of the issue"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/20 transition-all"
                     />
                   </div>
 
                   {/* Category */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Category</label>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Category</label>
                     <select
                       value={issueCategory}
                       onChange={(e) => setIssueCategory(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/20 transition-all appearance-none cursor-pointer"
                     >
                       <option value="Bug">Bug</option>
                       <option value="UI Issue">UI Issue</option>
@@ -377,29 +377,29 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
 
                   {/* Description */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Description</label>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Description</label>
                     <textarea
                       required
                       value={issueDescription}
                       onChange={(e) => setIssueDescription(e.target.value)}
                       placeholder="Provide a detailed description of what happened..."
                       rows={3}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/20 transition-all resize-none"
                     />
                   </div>
 
                   {/* Screenshot Input */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Optional Screenshot</label>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Optional Screenshot</label>
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => reportFileInputRef.current?.click()}
-                        className="bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-medium px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+                        className="bg-[#141414] border border-[#1D1D1D] hover:bg-[#181818] text-slate-300 font-medium px-4 py-2 rounded-xl text-xs transition cursor-pointer"
                       >
                         Choose File
                       </button>
-                      <span className="text-xs text-slate-500 truncate max-w-[200px]">
+                      <span className="text-xs text-[#707070] truncate max-w-[200px]">
                         {issueScreenshot ? "Screenshot attached" : "No file chosen"}
                       </span>
                       {issueScreenshot && (
@@ -435,7 +435,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                     setIssueDescription("");
                     setIssueScreenshot("");
                   }}
-                  className="w-1/3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-medium py-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center cursor-pointer"
+                  className="w-1/3 bg-[#141414] border border-[#1D1D1D] hover:bg-[#181818] text-slate-300 font-medium py-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center cursor-pointer"
                 >
                   Back
                 </button>
@@ -444,7 +444,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
                   <button
                     type="submit"
                     disabled={reportLoading}
-                    className="w-2/3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
+                    className="w-2/3 bg-[#1B3A7A] hover:bg-[#224A99] active:scale-[0.98] text-white font-semibold py-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {reportLoading ? (
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

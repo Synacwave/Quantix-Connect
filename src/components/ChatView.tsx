@@ -720,15 +720,15 @@ export default function ChatView({
     : messages;
 
   return (
-    <div className="flex-1 h-full bg-slate-950 flex flex-row relative select-none overflow-hidden min-w-0">
+    <div className="flex-1 h-full bg-[#090909] flex flex-row relative select-none overflow-hidden min-w-0">
       <div className="flex-1 h-full flex flex-col relative min-w-0">
         {/* Interactive Chat Header */}
-        <div className="px-4 py-3 bg-slate-900/50 border-b border-blue-500/10 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 py-3 bg-[#0D0D0D] border-b border-[#1D1D1D] flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             {/* Back mobile button */}
             <button 
               onClick={onBack}
-              className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              className="md:hidden p-1.5 rounded-lg hover:bg-[#181818] text-[#A8A8A8] hover:text-white transition cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -740,15 +740,15 @@ export default function ChatView({
                   className="relative shrink-0 cursor-pointer active:scale-95 transition"
                 >
                   {activeChat.avatarUrl ? (
-                    <img src={activeChat.avatarUrl} alt={activeChat.name} className="w-10 h-10 rounded-xl object-cover border border-blue-500/15" />
+                    <img src={activeChat.avatarUrl} alt={activeChat.name} className="w-10 h-10 rounded-xl object-cover border border-[#1D1D1D]" />
                   ) : (
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-950 to-blue-950 border border-blue-500/15 flex items-center justify-center text-blue-400 text-sm font-bold shadow-inner">
-                      <Users className="w-5 h-5 text-blue-400" />
+                    <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#1D1D1D] flex items-center justify-center text-[#2A5FFF] text-sm font-bold shadow-inner">
+                      <Users className="w-5 h-5 text-[#2A5FFF]" />
                     </div>
                   )}
                 </button>
                 <div className="min-w-0 leading-tight">
-                  <div className="text-xs font-extrabold text-white truncate hover:text-blue-400 transition cursor-pointer" onClick={() => setShowGroupInfo(true)}>{activeChat.name || "Secure Group"}</div>
+                  <div className="text-xs font-extrabold text-white truncate hover:text-[#2A5FFF] transition cursor-pointer" onClick={() => setShowGroupInfo(true)}>{activeChat.name || "Secure Group"}</div>
                   <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium">
                     <span>{activeChat.participants?.length || 0} participants</span>
                   </div>
@@ -767,19 +767,19 @@ export default function ChatView({
                           src={partner.avatarUrl} 
                           alt={partner.displayName} 
                           referrerPolicy="no-referrer"
-                          className={`w-10 h-10 rounded-full object-cover border ${isLucy ? "border-pink-500 shadow-[0_0_12px_rgba(236,72,153,0.7)]" : "border-blue-500/15"}`} 
+                          className={`w-10 h-10 rounded-full object-cover border ${isLucy ? "border-pink-500 shadow-[0_0_12px_rgba(236,72,153,0.7)]" : "border-[#1D1D1D]"}`} 
                         />
                       ) : (
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${isLucy ? "bg-gradient-to-tr from-purple-600 to-pink-500 text-white" : "bg-blue-900/40 text-blue-400"}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${isLucy ? "bg-gradient-to-tr from-purple-600 to-pink-500 text-white" : "bg-[#141414] border border-[#1D1D1D] text-[#2A5FFF]"}`}>
                           {partner.displayName.charAt(0).toUpperCase()}
                         </div>
                       )}
                       {partner.status === "online" && (
-                        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-slate-950 rounded-full ${isLucy ? "bg-pink-400" : "bg-emerald-500"}`}></span>
+                        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-[#0D0D0D] rounded-full ${isLucy ? "bg-pink-400" : "bg-emerald-500"}`}></span>
                       )}
                     </button>
                     <div className="min-w-0 leading-tight">
-                      <div className={`text-xs font-extrabold truncate transition cursor-pointer ${isLucy ? "text-purple-300 hover:text-pink-400" : "text-white hover:text-blue-400"}`} onClick={() => setSelectedProfileUser(partner)}>{partner.displayName}</div>
+                      <div className={`text-xs font-extrabold truncate transition cursor-pointer ${isLucy ? "text-purple-300 hover:text-pink-400" : "text-white hover:text-[#2A5FFF]"}`} onClick={() => setSelectedProfileUser(partner)}>{partner.displayName}</div>
                       <div className="text-[10px] text-slate-500 mt-0.5 truncate font-medium flex items-center gap-1.5">
                         {partner.status === "online" ? (
                           <span className={isLucy ? "text-pink-400 font-bold" : "text-emerald-500 font-bold"}>online</span>
@@ -787,7 +787,7 @@ export default function ChatView({
                           <span>offline</span>
                         )}
                         {partner.customStatus && (
-                          <span className={`${isLucy ? "text-pink-300/80 border-purple-900" : "text-blue-400 border-slate-800"} border-l pl-1.5 italic font-semibold truncate max-w-[120px]`}>
+                          <span className={`${isLucy ? "text-pink-300/80 border-purple-900" : "text-[#2A5FFF] border-[#1D1D1D]"} border-l pl-1.5 italic font-semibold truncate max-w-[120px]`}>
                             {partner.customStatus}
                           </span>
                         )}
@@ -803,7 +803,7 @@ export default function ChatView({
             {/* Starred Messages Toggle Button */}
             <button
               onClick={() => setStarredOnlyFilter(!starredOnlyFilter)}
-              className={`p-2 rounded-xl transition cursor-pointer ${starredOnlyFilter ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20" : "text-slate-500 hover:bg-slate-900 hover:text-slate-300"}`}
+              className={`p-2 rounded-xl transition cursor-pointer ${starredOnlyFilter ? "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20" : "text-[#707070] hover:bg-[#181818] hover:text-[#A8A8A8]"}`}
               title={starredOnlyFilter ? "Show All Messages" : "Show Starred Messages"}
             >
               <Star className={`w-4 h-4 ${starredOnlyFilter ? "fill-yellow-400" : ""}`} />
@@ -811,7 +811,7 @@ export default function ChatView({
 
             <button
               onClick={() => onTogglePin(activeChat.id)}
-              className={`p-2 rounded-xl transition cursor-pointer ${activeChat.isPinned ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-500 hover:bg-slate-900 hover:text-slate-300"}`}
+              className={`p-2 rounded-xl transition cursor-pointer ${activeChat.isPinned ? "bg-[#2A5FFF]/10 text-[#2A5FFF] hover:bg-[#2A5FFF]/20" : "text-[#707070] hover:bg-[#181818] hover:text-[#A8A8A8]"}`}
               title={activeChat.isPinned ? "Unpin Chat" : "Pin Chat"}
             >
               <Pin className={`w-4 h-4 ${activeChat.isPinned ? "rotate-45" : ""}`} />
@@ -820,7 +820,7 @@ export default function ChatView({
             {activeChat.isGroup && (
               <button
                 onClick={() => setShowGroupInfo(!showGroupInfo)}
-                className={`p-2 rounded-xl transition cursor-pointer ${showGroupInfo ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-500 hover:bg-slate-900 hover:text-slate-300"}`}
+                className={`p-2 rounded-xl transition cursor-pointer ${showGroupInfo ? "bg-[#2A5FFF]/10 text-[#2A5FFF] hover:bg-[#2A5FFF]/20" : "text-[#707070] hover:bg-[#181818] hover:text-[#A8A8A8]"}`}
                 title="Group Protocol Details"
               >
                 <Info className="w-4 h-4" />
@@ -830,7 +830,7 @@ export default function ChatView({
         </div>
 
         {/* Messages Logs Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-radial from-slate-950 via-slate-950 to-black scrollbar-thin scrollbar-thumb-slate-800">
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-[#090909]">
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl p-3 max-w-sm mx-auto flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -864,7 +864,7 @@ export default function ChatView({
               if (isSystem) {
                 return (
                   <div key={msg.id} className="flex justify-center my-2 animate-fade-in">
-                    <div className="bg-slate-900/60 border border-blue-500/10 px-4 py-1.5 rounded-full text-[10px] font-mono text-blue-400 max-w-[85%] text-center uppercase tracking-wider leading-relaxed shadow-sm">
+                    <div className="bg-[#101010] border border-[#1D1D1D] px-4 py-1.5 rounded-full text-[10px] font-mono text-[#2A5FFF] max-w-[85%] text-center uppercase tracking-wider leading-relaxed shadow-sm">
                       {msg.text}
                     </div>
                   </div>
@@ -890,13 +890,13 @@ export default function ChatView({
                   {activeChat.isGroup && !isSelf && (
                     <button
                       onClick={() => senderUser && setSelectedProfileUser(senderUser)}
-                      className="w-8 h-8 rounded-full bg-slate-900 shrink-0 self-end overflow-hidden border border-slate-800 cursor-pointer active:scale-90 transition"
+                      className="w-8 h-8 rounded-full bg-[#141414] shrink-0 self-end overflow-hidden border border-[#1D1D1D] cursor-pointer active:scale-90 transition"
                       title={senderUser?.displayName || "View Profile"}
                     >
                       {senderUser?.avatarUrl ? (
                         <img src={senderUser.avatarUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-[10px] font-extrabold uppercase">
+                        <div className="w-full h-full bg-[#141414] border border-[#1D1D1D] flex items-center justify-center text-[#2A5FFF] text-[10px] font-extrabold uppercase">
                           {senderUser?.displayName.charAt(0) || "U"}
                         </div>
                       )}
@@ -912,7 +912,7 @@ export default function ChatView({
                       {/* Reaction trigger */}
                       <button
                         onClick={() => setActiveReactionMsgId(activeReactionMsgId === msg.id ? null : msg.id)}
-                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 cursor-pointer transition shadow"
+                        className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#181818] text-[#A8A8A8] hover:text-white border border-[#1D1D1D] cursor-pointer transition shadow"
                         title="Add reaction"
                       >
                         <SmilePlus className="w-3.5 h-3.5" />
@@ -921,7 +921,7 @@ export default function ChatView({
                       {/* Reply trigger */}
                       <button
                         onClick={() => setReplyingToMessage(msg)}
-                        className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 cursor-pointer transition shadow"
+                        className="p-1.5 rounded-lg bg-[#141414] hover:bg-[#181818] text-[#A8A8A8] hover:text-white border border-[#1D1D1D] cursor-pointer transition shadow"
                         title="Reply to message"
                       >
                         <CornerUpLeft className="w-3.5 h-3.5" />
@@ -930,8 +930,8 @@ export default function ChatView({
                       {/* Star message trigger */}
                       <button
                         onClick={() => toggleStarMessage(msg.id)}
-                        className={`p-1.5 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer transition shadow ${
-                          isStarred ? "text-yellow-400 hover:bg-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-800"
+                        className={`p-1.5 rounded-lg bg-[#141414] border border-[#1D1D1D] cursor-pointer transition shadow ${
+                          isStarred ? "text-yellow-400 hover:bg-[#181818]" : "text-[#A8A8A8] hover:text-white hover:bg-[#181818]"
                         }`}
                         title={isStarred ? "Unstar message" : "Star message"}
                       >
@@ -942,7 +942,7 @@ export default function ChatView({
                       {isSelf && (
                         <button
                           onClick={() => onDeleteMessage(msg.id)}
-                          className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-950 text-slate-500 hover:text-red-400 border border-slate-800 cursor-pointer transition shadow"
+                          className="p-1.5 rounded-lg bg-[#141414] hover:bg-red-950/40 text-[#707070] hover:text-red-400 border border-[#1D1D1D] cursor-pointer transition shadow"
                           title="Delete message"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -957,7 +957,7 @@ export default function ChatView({
                           initial={{ opacity: 0, scale: 0.85, y: -5 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.85, y: -5 }}
-                          className={`absolute bottom-full mb-1 bg-slate-900 border border-slate-800 rounded-full px-2 py-1 shadow-2xl flex gap-1 z-20 ${
+                          className={`absolute bottom-full mb-1 bg-[#141414] border border-[#1D1D1D] rounded-full px-2 py-1 shadow-2xl flex gap-1 z-20 ${
                             isSelf ? "right-0" : "left-0"
                           }`}
                         >
@@ -965,7 +965,7 @@ export default function ChatView({
                             <button
                               key={emoji}
                               onClick={() => handleToggleReaction(msg.id, emoji)}
-                              className="w-7 h-7 hover:bg-slate-800 rounded-full flex items-center justify-center text-sm cursor-pointer hover:scale-120 active:scale-90 transition duration-100"
+                              className="w-7 h-7 hover:bg-[#181818] rounded-full flex items-center justify-center text-sm cursor-pointer hover:scale-120 active:scale-90 transition duration-100"
                             >
                               {emoji}
                             </button>
@@ -979,14 +979,14 @@ export default function ChatView({
                       onClick={() => setTapMenuMessage(msg)}
                       className={`relative w-full rounded-2xl px-3.5 py-2.5 shadow-lg border flex flex-col gap-1 transition cursor-pointer hover:brightness-105 active:scale-[0.99] duration-150 select-none ${
                         msg.isBroadcast
-                          ? "bg-slate-900 border-slate-700/60 text-slate-100 rounded-tl-none shadow-[0_0_20px_rgba(0,0,0,1.0)] ring-1 ring-black"
+                          ? "bg-[#141414] border-amber-500/30 text-amber-100 rounded-tl-none shadow-md"
                           : isSelf 
-                            ? "bg-blue-600/15 border-blue-500/25 text-white rounded-tr-none" 
+                            ? "bg-[#1A1A1A] border-[#1B3A7A] text-white rounded-tr-none" 
                             : (msg.senderId === "00000000000000000000lucy" || msg.senderId === "0000000000000000000010c1")
                               ? "bg-pink-950/20 border-pink-500/30 text-pink-100 rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]"
                               : isTaggedMe
                                 ? "bg-amber-500/10 border-amber-500/30 text-slate-100 rounded-tl-none ring-1 ring-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.05)]"
-                                : "bg-slate-900 border-slate-800 text-slate-100 rounded-tl-none"
+                                : "bg-[#111111] border-[#1D1D1D] text-slate-100 rounded-tl-none"
                       }`}
                     >
                       
@@ -997,7 +997,7 @@ export default function ChatView({
                             e.stopPropagation();
                             scrollToMessageId(msg.replyTo.id);
                           }}
-                          className="w-full text-left bg-slate-950/45 hover:bg-slate-950 border-l-4 border-blue-500 rounded-r-lg p-2 mb-1.5 transition text-xs shrink-0 select-none block"
+                          className="w-full text-left bg-[#141414] hover:bg-[#181818] border-l-4 border-[#2A5FFF] rounded-r-lg p-2 mb-1.5 transition text-xs block"
                         >
                           <span className="font-extrabold text-blue-400 block text-[9px] mb-0.5">
                             {msg.replyTo.senderName}
@@ -1012,13 +1012,13 @@ export default function ChatView({
                       {msg.isBroadcast && (
                         <span className="text-[10px] font-extrabold text-red-400 mb-0.5 block flex items-center gap-1.5 select-none">
                           <span>📢 Admin Broadcast</span>
-                          <span className="bg-slate-950 border border-slate-800 text-slate-400 text-[8px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold shadow-[0_0_8px_rgba(0,0,0,1)]">OFFICIAL</span>
+                          <span className="bg-[#0D0D0D] border border-[#1D1D1D] text-slate-400 text-[8px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold shadow-[0_0_8px_rgba(0,0,0,1)]">OFFICIAL</span>
                         </span>
                       )}
 
                       {/* Group Sender Name Header */}
                       {activeChat.isGroup && !isSelf && !msg.isBroadcast && msg.senderId !== "00000000000000000000lucy" && msg.senderId !== "0000000000000000000010c1" && (
-                        <span className="text-[10px] font-extrabold text-blue-400 mb-0.5 block">
+                        <span className="text-[10px] font-extrabold text-[#2A5FFF] mb-0.5 block">
                           {senderUser?.displayName || `User @${msg.senderId.slice(-4)}`}
                         </span>
                       )}
@@ -1042,7 +1042,7 @@ export default function ChatView({
                       {msg.mediaType === "image" && msg.mediaUrl && (
                         <div 
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded-xl overflow-hidden mb-1 border border-slate-950 bg-slate-950 shadow-inner max-w-xs relative group-media"
+                          className="rounded-xl overflow-hidden mb-1 border border-[#1D1D1D] bg-[#141414] shadow-inner max-w-xs relative group-media"
                         >
                           <img 
                             src={msg.mediaUrl} 
@@ -1075,11 +1075,11 @@ export default function ChatView({
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-3 bg-slate-950/50 hover:bg-slate-950 border border-slate-800 px-3.5 py-2 rounded-xl text-left transition mb-1 max-w-xs cursor-pointer group"
+                          className="flex items-center gap-3 bg-[#0D0D0D] hover:bg-[#141414] border border-[#1D1D1D] px-3.5 py-2 rounded-xl text-left transition mb-1 max-w-xs cursor-pointer group"
                         >
-                          <File className="w-6 h-6 text-blue-500 shrink-0" />
+                          <File className="w-6 h-6 text-[#2A5FFF] shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <span className="text-[10px] font-bold text-white block truncate group-hover:text-blue-400">{msg.text}</span>
+                            <span className="text-[10px] font-bold text-white block truncate group-hover:text-[#2A5FFF]">{msg.text}</span>
                             <span className="text-[9px] text-slate-500 block mt-0.5">Click to download file</span>
                           </div>
                           <Download className="w-4 h-4 text-slate-500 shrink-0" />
@@ -1094,9 +1094,9 @@ export default function ChatView({
                         const totalVotes = optionVotesArray.reduce((acc, current) => acc + current.length, 0);
 
                         return (
-                          <div className="bg-slate-950/45 border border-slate-800/80 rounded-xl p-3.5 space-y-3 min-w-[250px] max-w-xs shrink-0 text-left">
+                          <div className="bg-[#0D0D0D] border border-[#1D1D1D] rounded-xl p-3.5 space-y-3 min-w-[250px] max-w-xs shrink-0 text-left">
                             <div className="flex items-center gap-2">
-                              <BarChart2 className="w-4 h-4 text-blue-400 shrink-0" />
+                              <BarChart2 className="w-4 h-4 text-[#2A5FFF] shrink-0" />
                               <span className="text-xs font-bold text-white tracking-wide">{msg.poll.question}</span>
                             </div>
 
@@ -1115,13 +1115,13 @@ export default function ChatView({
                                     }}
                                     className={`w-full text-left rounded-lg p-2.5 border text-[11px] font-medium transition-all relative overflow-hidden flex justify-between items-center group/opt ${
                                       hasVoted 
-                                        ? "bg-blue-600/10 border-blue-500/30 text-blue-300" 
-                                        : "bg-slate-900/50 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-900"
+                                        ? "bg-[#2A5FFF]/10 border-[#2A5FFF]/30 text-[#2A5FFF]" 
+                                        : "bg-[#141414] border-[#1D1D1D] text-[#A8A8A8] hover:border-[#1D1D1D] hover:bg-[#181818]"
                                     }`}
                                   >
                                     {/* Animated Progress Bar Fill */}
                                     <div 
-                                      className="absolute inset-y-0 left-0 bg-blue-500/10 transition-all duration-500" 
+                                      className="absolute inset-y-0 left-0 bg-[#2A5FFF]/10 transition-all duration-500" 
                                       style={{ width: `${percentage}%` }}
                                     />
                                     
@@ -1135,7 +1135,7 @@ export default function ChatView({
                               })}
                             </div>
 
-                            <div className="flex items-center justify-between text-[9px] text-slate-500 font-mono font-bold uppercase tracking-wide border-t border-slate-900 pt-2 shrink-0 select-none">
+                            <div className="flex items-center justify-between text-[9px] text-slate-500 font-mono font-bold uppercase tracking-wide border-t border-[#1D1D1D] pt-2 shrink-0 select-none">
                               <span>Interactive Poll</span>
                               <span>{totalVotes} total votes</span>
                             </div>
@@ -1153,7 +1153,7 @@ export default function ChatView({
                         {isSelf && (
                           <span className="ml-1 shrink-0">
                             {isRead ? (
-                              <CheckCheck className="w-3.5 h-3.5 text-blue-400" />
+                              <CheckCheck className="w-3.5 h-3.5 text-[#2A5FFF]" />
                             ) : (
                               <Check className="w-3.5 h-3.5 text-slate-600" />
                             )}
@@ -1183,8 +1183,8 @@ export default function ChatView({
                                 }}
                                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border transition cursor-pointer active:scale-95 ${
                                   reactedByMe 
-                                    ? "bg-blue-600/10 border-blue-500/30 text-blue-300 shadow-sm" 
-                                    : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                                    ? "bg-[#2A5FFF]/10 border-[#2A5FFF]/30 text-[#2A5FFF] shadow-sm" 
+                                    : "bg-[#141414] border-[#1D1D1D] text-[#A8A8A8] hover:border-[#202020]"
                                 }`}
                               >
                                 <span>{emoji}</span>
@@ -1209,13 +1209,13 @@ export default function ChatView({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               className="flex justify-start"
             >
-              <div className="bg-slate-900/60 border border-slate-900/50 rounded-2xl px-4 py-2.5 text-slate-500 text-[10px] flex items-center gap-1.5 font-medium shadow-sm">
-                <span className="font-bold text-slate-400">{partner.displayName}</span>
+              <div className="bg-[#111111] border border-[#1D1D1D] rounded-2xl px-4 py-2.5 text-[#707070] text-[10px] flex items-center gap-1.5 font-medium shadow-sm">
+                <span className="font-bold text-[#A8A8A8]">{partner.displayName}</span>
                 <span>is typing</span>
                 <span className="flex gap-0.5 ml-0.5 mt-1 shrink-0">
-                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
-                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                  <span className="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  <span className="w-1 h-1 bg-[#2A5FFF] rounded-full animate-bounce"></span>
+                  <span className="w-1 h-1 bg-[#2A5FFF] rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                  <span className="w-1 h-1 bg-[#2A5FFF] rounded-full animate-bounce [animation-delay:0.4s]"></span>
                 </span>
               </div>
             </motion.div>
@@ -1225,7 +1225,7 @@ export default function ChatView({
         </div>
 
         {/* Input Action Panel Bar */}
-        <div className="p-3 bg-slate-950 border-t border-blue-500/10 flex flex-col gap-2 relative shrink-0">
+        <div className="p-3 bg-[#0D0D0D] border-t border-[#1D1D1D] flex flex-col gap-2 relative shrink-0">
           
           {/* Tag Suggestions Overlay Panel */}
           <AnimatePresence>
@@ -1243,7 +1243,7 @@ export default function ChatView({
                     initial={{ opacity: 0, y: 10, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                    className="absolute bottom-full mb-2 left-3 right-3 bg-slate-900 border border-blue-500/15 rounded-2xl p-2 shadow-2xl z-40 max-w-xs overflow-hidden flex flex-col divide-y divide-slate-800/50"
+                    className="absolute bottom-full mb-2 left-3 right-3 bg-[#0D0D0D] border border-[#1D1D1D] rounded-2xl p-2 shadow-2xl z-40 max-w-xs overflow-hidden flex flex-col divide-y divide-[#1D1D1D]"
                   >
                     <div className="px-3 py-1.5 text-[9px] font-mono uppercase tracking-wider text-slate-500">
                       Mention Member
@@ -1254,18 +1254,18 @@ export default function ChatView({
                           key={user.id}
                           type="button"
                           onClick={() => handleSelectTag(user.username)}
-                          className="w-full px-3 py-2 text-left hover:bg-blue-600/10 text-xs flex items-center gap-2 transition"
+                          className="w-full px-3 py-2 text-left hover:bg-[#2A5FFF]/10 text-xs flex items-center gap-2 transition"
                         >
                           {user.avatarUrl ? (
                             <img src={user.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
                           ) : (
-                            <div className="w-5 h-5 rounded-full bg-blue-900/40 flex items-center justify-center text-blue-400 text-[8px] font-bold">
+                            <div className="w-5 h-5 rounded-full bg-[#141414] border border-[#1D1D1D] flex items-center justify-center text-[#2A5FFF] text-[8px] font-bold">
                               {user.displayName.charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="flex-1 truncate min-w-0">
                             <span className="font-bold text-white block leading-tight text-[11px]">{user.displayName}</span>
-                            <span className="text-[9px] text-slate-400 block leading-none">@{user.username}</span>
+                            <span className="text-[9px] text-[#A8A8A8] block leading-none">@{user.username}</span>
                           </div>
                         </button>
                       ))}
@@ -1278,9 +1278,9 @@ export default function ChatView({
           
           {/* Quoted Replying Preview Banner */}
           {replyingToMessage && (
-            <div className="flex items-center justify-between gap-3 bg-slate-900/80 border border-blue-500/10 rounded-xl px-4 py-3 text-xs animate-fade-in shrink-0 relative">
-              <div className="flex-1 min-w-0 border-l-4 border-blue-500 pl-3">
-                <span className="font-bold text-blue-400 block text-[10px]">
+            <div className="flex items-center justify-between gap-3 bg-[#101010] border border-[#1D1D1D] rounded-xl px-4 py-3 text-xs animate-fade-in shrink-0 relative">
+              <div className="flex-1 min-w-0 border-l-4 border-[#2A5FFF] pl-3">
+                <span className="font-bold text-[#2A5FFF] block text-[10px]">
                   Replying to @{activeChat.participants?.find(p => p.id === replyingToMessage.senderId)?.username || replyingToMessage.senderId.slice(-4)}
                 </span>
                 <span className="text-slate-400 truncate block mt-0.5 max-w-lg font-light">
@@ -1289,7 +1289,7 @@ export default function ChatView({
               </div>
               <button 
                 onClick={() => setReplyingToMessage(null)}
-                className="p-1.5 bg-slate-950/60 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition"
+                className="p-1.5 bg-[#0D0D0D] hover:bg-[#181818] rounded-lg text-slate-400 hover:text-white transition"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1303,16 +1303,16 @@ export default function ChatView({
                 initial={{ opacity: 0, y: 15, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 15, scale: 0.98 }}
-                className="absolute bottom-16 left-3 right-3 bg-slate-950 border border-blue-500/15 rounded-2xl p-4 shadow-2xl z-30 space-y-4 max-w-md mx-auto"
+                className="absolute bottom-16 left-3 right-3 bg-[#0D0D0D] border border-[#1D1D1D] rounded-2xl p-4 shadow-2xl z-30 space-y-4 max-w-md mx-auto"
               >
-                <div className="flex items-center justify-between border-b border-slate-900 pb-2">
-                  <div className="flex items-center gap-1.5 text-blue-400">
+                <div className="flex items-center justify-between border-b border-[#1D1D1D] pb-2">
+                  <div className="flex items-center gap-1.5 text-[#2A5FFF]">
                     <BarChart2 className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wider">Create Interactive Poll</span>
                   </div>
                   <button 
                     onClick={() => setShowPollCreator(false)}
-                    className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+                    className="p-1 hover:bg-[#181818] rounded-lg text-slate-400 hover:text-white transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -1326,7 +1326,7 @@ export default function ChatView({
                       placeholder="Ask a question..."
                       value={pollQuestion}
                       onChange={(e) => setPollQuestion(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/40 transition"
+                      className="w-full bg-[#141414] border border-[#202020] rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#2A5FFF]/50 transition"
                     />
                   </div>
 
@@ -1348,13 +1348,13 @@ export default function ChatView({
                               updated[idx] = e.target.value;
                               setPollOptions(updated);
                             }}
-                            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-blue-500/40 transition"
+                            className="flex-1 bg-[#141414] border border-[#202020] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#2A5FFF]/50 transition"
                           />
                           {pollOptions.length > 2 && (
                             <button
                               type="button"
                               onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
-                              className="p-2 text-red-400 hover:bg-slate-900 rounded-lg transition shrink-0"
+                              className="p-2 text-red-400 hover:bg-[#181818] rounded-lg transition shrink-0"
                             >
                               <X className="w-4.5 h-4.5" />
                             </button>
@@ -1367,9 +1367,9 @@ export default function ChatView({
                       <button
                         type="button"
                         onClick={() => setPollOptions([...pollOptions, ""])}
-                        className="w-full py-2 bg-slate-900 hover:bg-slate-900/60 border border-dashed border-slate-800 rounded-xl text-[10px] font-bold text-slate-400 flex items-center justify-center gap-1 transition"
+                        className="w-full py-2 bg-[#141414] hover:bg-[#181818] border border-dashed border-[#1D1D1D] rounded-xl text-[10px] font-bold text-slate-400 flex items-center justify-center gap-1 transition"
                       >
-                        <Plus className="w-3.5 h-3.5 text-blue-500" />
+                        <Plus className="w-3.5 h-3.5 text-[#2A5FFF]" />
                         <span>Add Option</span>
                       </button>
                     )}
@@ -1379,14 +1379,14 @@ export default function ChatView({
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     onClick={() => setShowPollCreator(false)}
-                    className="px-4 py-2 bg-slate-900 text-slate-400 hover:text-white rounded-xl text-xs transition font-bold"
+                    className="px-4 py-2 bg-[#141414] text-slate-400 hover:text-white rounded-xl text-xs transition font-bold"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreatePoll}
                     disabled={!pollQuestion.trim() || pollOptions.filter(o => o.trim() !== "").length < 2}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs transition font-bold disabled:opacity-40 disabled:pointer-events-none shadow"
+                    className="px-4 py-2 bg-[#1B3A7A] hover:bg-[#224A99] text-white rounded-xl text-xs transition font-bold disabled:opacity-40 disabled:pointer-events-none shadow"
                   >
                     Post Poll
                   </button>
@@ -1402,13 +1402,13 @@ export default function ChatView({
                 initial={{ opacity: 0, y: 15, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 15, scale: 0.98 }}
-                className="absolute bottom-16 left-3 bg-slate-950 border border-slate-800 rounded-2xl p-2 shadow-2xl z-30 max-w-xs grid grid-cols-6 gap-1"
+                className="absolute bottom-16 left-3 bg-[#0D0D0D] border border-[#1D1D1D] rounded-2xl p-2 shadow-2xl z-30 max-w-xs grid grid-cols-6 gap-1"
               >
                 {EMOJIS.map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => insertEmoji(emoji)}
-                    className="w-10 h-10 hover:bg-slate-900 text-lg rounded-xl flex items-center justify-center transition active:scale-90 cursor-pointer"
+                    className="w-10 h-10 hover:bg-[#181818] text-lg rounded-xl flex items-center justify-center transition active:scale-90 cursor-pointer"
                   >
                     {emoji}
                   </button>
@@ -1426,7 +1426,7 @@ export default function ChatView({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="p-2 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-blue-400 transition shrink-0 cursor-pointer"
+                className="p-2 rounded-xl hover:bg-[#181818] text-[#A8A8A8] hover:text-[#2A5FFF] transition shrink-0 cursor-pointer"
                 title="Attach file"
               >
                 <Paperclip className="w-4 h-4" />
@@ -1441,7 +1441,7 @@ export default function ChatView({
               {/* Create Poll Trigger Button (WhatsApp style) */}
               <button
                 onClick={() => setShowPollCreator(!showPollCreator)}
-                className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showPollCreator ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
+                className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showPollCreator ? "bg-[#2A5FFF]/10 text-[#2A5FFF] hover:bg-[#2A5FFF]/20" : "text-[#A8A8A8] hover:bg-[#181818] hover:text-white"}`}
                 title="Create Interactive Poll"
               >
                 <BarChart2 className="w-4 h-4" />
@@ -1460,7 +1460,7 @@ export default function ChatView({
                 className={`p-2 rounded-xl transition shrink-0 cursor-pointer relative flex items-center gap-1 ${
                   selfDestructTimer > 0 
                     ? "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20" 
-                    : "text-slate-400 hover:bg-slate-900 hover:text-white"
+                    : "text-[#A8A8A8] hover:bg-[#181818] hover:text-white"
                 }`}
                 title={`Disappearing Message Timer: ${selfDestructTimer > 0 ? `${selfDestructTimer}s` : "Off"}`}
               >
@@ -1471,7 +1471,7 @@ export default function ChatView({
               {/* Emoji Toggle button */}
               <button
                 onClick={() => setShowEmojis(!showEmojis)}
-                className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showEmojis ? "bg-blue-600/10 text-blue-400 hover:bg-blue-600/20" : "text-slate-400 hover:bg-slate-900 hover:text-white"}`}
+                className={`p-2 rounded-xl transition shrink-0 cursor-pointer ${showEmojis ? "bg-[#2A5FFF]/10 text-[#2A5FFF] hover:bg-[#2A5FFF]/20" : "text-[#A8A8A8] hover:bg-[#181818] hover:text-white"}`}
                 title="Insert emoji"
               >
                 <Smile className="w-4 h-4" />
@@ -1482,7 +1482,7 @@ export default function ChatView({
             <div className="flex-1 min-w-0 w-full">
               {isRecording ? (
                 // RECORDING PULSING STATE PANEL
-                <div className="bg-slate-900 border border-red-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs w-full">
+                <div className="bg-[#141414] border border-red-500/20 rounded-xl px-3 py-1.5 flex items-center justify-between text-xs w-full">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping shrink-0"></span>
                     <span className="text-red-400 font-bold shrink-0">Recording Voice</span>
@@ -1492,14 +1492,14 @@ export default function ChatView({
                     <button 
                       type="button"
                       onClick={cancelRecording}
-                      className="px-2.5 py-1 bg-slate-800 text-slate-400 rounded-lg hover:text-white hover:bg-slate-700 transition cursor-pointer text-[9px] font-bold uppercase tracking-wider"
+                      className="px-2.5 py-1 bg-[#141414] text-[#A8A8A8] rounded-lg hover:text-white hover:bg-[#181818] transition cursor-pointer text-[9px] font-bold uppercase tracking-wider"
                     >
                       Cancel
                     </button>
                     <button 
                       type="button"
                       onClick={stopRecording}
-                      className="px-2.5 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition cursor-pointer text-[9px] font-bold uppercase tracking-wider flex items-center gap-1"
+                      className="px-2.5 py-1 bg-[#1B3A7A] text-white rounded-lg hover:bg-[#224A99] transition cursor-pointer text-[9px] font-bold uppercase tracking-wider flex items-center gap-1"
                     >
                       <StopCircle className="w-3.5 h-3.5" />
                       <span>Send</span>
@@ -1516,14 +1516,14 @@ export default function ChatView({
                     onChange={handleInputChange}
                     placeholder={uploading ? "Uploading media..." : "Write a message..."}
                     disabled={uploading}
-                    className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 transition-all min-w-0"
+                    className="flex-1 bg-[#141414] border border-[#202020] rounded-xl px-4 py-2 text-xs text-white placeholder:text-[#707070] focus:outline-none focus:border-[#2A5FFF] focus:ring-1 focus:ring-[#2A5FFF]/25 transition-all min-w-0"
                   />
 
                   {inputText.trim() ? (
                     // SEND TEXT BUTTON
                     <button
                       type="submit"
-                      className="p-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition shrink-0 shadow-[0_4px_12px_rgba(37,99,235,0.25)] active:scale-95 cursor-pointer flex items-center justify-center"
+                      className="p-2 rounded-xl bg-[#1B3A7A] hover:bg-[#224A99] text-white transition shadow-[0_4px_12px_rgba(42,95,255,0.15)] active:scale-95 cursor-pointer flex items-center justify-center"
                       title="Send message"
                     >
                       <Send className="w-4 h-4 fill-white" />
@@ -1534,7 +1534,7 @@ export default function ChatView({
                       type="button"
                       onClick={startRecording}
                       disabled={uploading}
-                      className="p-2 rounded-xl hover:bg-slate-900 text-slate-400 hover:text-red-400 transition shrink-0 cursor-pointer"
+                      className="p-2 rounded-xl hover:bg-[#181818] text-[#A8A8A8] hover:text-red-400 transition shrink-0 cursor-pointer"
                       title="Record voice message"
                     >
                       <Mic className="w-4 h-4" />
@@ -1552,16 +1552,16 @@ export default function ChatView({
       {showGroupInfo && activeChat.isGroup && (() => {
         const isCurrentUserAdmin = activeChat.admins?.includes(currentUser.id);
         return (
-          <div className="w-full md:w-80 border-l border-blue-500/10 bg-slate-950 flex flex-col h-full animate-fade-in shrink-0 absolute md:relative right-0 top-0 z-20">
+          <div className="w-full md:w-80 border-l border-[#1D1D1D] bg-[#0B0B0B] flex flex-col h-full animate-fade-in shrink-0 absolute md:relative right-0 top-0 z-20">
             {/* Header */}
-            <div className="p-4 border-b border-blue-500/10 flex items-center justify-between bg-slate-900/20">
+            <div className="p-4 border-b border-[#1D1D1D] flex items-center justify-between bg-[#0D0D0D]">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-500" />
+                <Users className="w-4 h-4 text-[#2A5FFF]" />
                 <span className="font-extrabold text-xs text-white uppercase tracking-wider">Group Details</span>
               </div>
               <button 
                 onClick={() => setShowGroupInfo(false)}
-                className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+                className="p-1 hover:bg-[#181818] rounded-lg text-slate-400 hover:text-white transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1588,20 +1588,20 @@ export default function ChatView({
               )}
 
               {/* Group Card / Avatar section */}
-              <div className="flex flex-col items-center text-center space-y-3 p-4 bg-slate-900/30 rounded-2xl border border-blue-500/5 relative">
+              <div className="flex flex-col items-center text-center space-y-3 p-4 bg-[#101010] rounded-2xl border border-[#1D1D1D] relative">
                 <div className="relative group">
                   {activeChat.avatarUrl ? (
-                    <img src={activeChat.avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover border border-blue-500/20" referrerPolicy="no-referrer" />
+                    <img src={activeChat.avatarUrl} alt="" className="w-20 h-20 rounded-2xl object-cover border border-[#1D1D1D]" referrerPolicy="no-referrer" />
                   ) : (
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-950 to-blue-950 border border-blue-500/20 flex items-center justify-center shadow-lg">
-                      <Users className="w-8 h-8 text-blue-400" />
+                    <div className="w-20 h-20 rounded-2xl bg-[#141414] border border-[#1D1D1D] flex items-center justify-center shadow-lg">
+                      <Users className="w-8 h-8 text-[#2A5FFF]" />
                     </div>
                   )}
                   
                   {isCurrentUserAdmin && (
                     <button
                       onClick={() => setIsEditingPic(!isEditingPic)}
-                      className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg transition active:scale-90 cursor-pointer"
+                      className="absolute -bottom-1.5 -right-1.5 p-1.5 bg-[#1B3A7A] hover:bg-[#224A99] text-white rounded-lg shadow-lg transition active:scale-90 cursor-pointer"
                       title="Change Avatar"
                     >
                       <Edit2 className="w-3 h-3" />
@@ -1611,14 +1611,14 @@ export default function ChatView({
 
                 {/* Edit Pic Input Form */}
                 {isEditingPic && (
-                  <div className="w-full space-y-2.5 mt-2 pt-2 border-t border-slate-800/50 text-left">
+                  <div className="w-full space-y-2.5 mt-2 pt-2 border-t border-[#1D1D1D] text-left">
                     <div>
                       <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 block mb-1">Upload from Device</span>
                       <button
                         type="button"
                         onClick={() => groupPicInputRef.current?.click()}
                         disabled={groupPicUploading}
-                        className="w-full py-1.5 bg-blue-600/10 hover:bg-blue-600/20 border border-dashed border-blue-500/30 text-blue-400 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        className="w-full py-1.5 bg-[#2A5FFF]/10 hover:bg-[#2A5FFF]/20 border border-dashed border-[#1D1D1D] text-[#2A5FFF] text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         <Upload className="w-3.5 h-3.5" />
                         <span>{groupPicUploading ? "Uploading..." : "Choose Image File"}</span>
@@ -1633,9 +1633,9 @@ export default function ChatView({
                     </div>
 
                     <div className="relative flex py-1 items-center">
-                      <div className="flex-grow border-t border-slate-800/40"></div>
+                      <div className="flex-grow border-t border-[#1D1D1D]"></div>
                       <span className="flex-shrink mx-2 text-[8px] font-mono text-slate-600 uppercase">Or Enter Link</span>
-                      <div className="flex-grow border-t border-slate-800/40"></div>
+                      <div className="flex-grow border-t border-[#1D1D1D]"></div>
                     </div>
 
                     <div>
@@ -1646,7 +1646,7 @@ export default function ChatView({
                           value={editedPic}
                           onChange={(e) => setEditedPic(e.target.value)}
                           placeholder="https://..."
-                          className="flex-1 bg-slate-950 border border-slate-850 rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-blue-500"
+                          className="flex-1 bg-[#141414] border border-[#1D1D1D] rounded-lg px-2 py-1 text-[11px] text-white focus:outline-none focus:border-[#2A5FFF]"
                         />
                         <button
                           onClick={handleSaveGroupPic}
@@ -1675,7 +1675,7 @@ export default function ChatView({
                         type="text"
                         value={editedName}
                         onChange={(e) => setEditedName(e.target.value)}
-                        className="bg-slate-950 border border-slate-850 rounded-lg px-2 py-1 text-xs text-center font-bold text-white focus:outline-none focus:border-blue-500 w-4/5"
+                        className="bg-[#141414] border border-[#1D1D1D] rounded-lg px-2 py-1 text-xs text-center font-bold text-white focus:outline-none focus:border-[#2A5FFF] w-4/5"
                       />
                       <button
                         onClick={handleSaveGroupName}
@@ -1685,7 +1685,7 @@ export default function ChatView({
                       </button>
                       <button
                         onClick={() => setIsEditingName(false)}
-                        className="p-1 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition"
+                        className="p-1 bg-[#141414] hover:bg-[#181818] text-slate-400 rounded-lg transition"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -1696,7 +1696,7 @@ export default function ChatView({
                       {isCurrentUserAdmin && (
                         <button
                           onClick={() => setIsEditingName(true)}
-                          className="text-slate-500 hover:text-white transition p-0.5 rounded hover:bg-slate-900"
+                          className="text-slate-500 hover:text-white transition p-0.5 rounded hover:bg-[#181818]"
                           title="Edit Name"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -1709,13 +1709,13 @@ export default function ChatView({
               </div>
 
               {/* Description section */}
-              <div className="space-y-1.5 bg-slate-900/10 border border-slate-900/50 p-3 rounded-2xl">
+              <div className="space-y-1.5 bg-[#101010] border border-[#1D1D1D] p-3 rounded-2xl">
                 <div className="flex items-center justify-between">
                   <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500">Channel Description</span>
                   {isCurrentUserAdmin && !isEditingDesc && (
                     <button
                       onClick={() => setIsEditingDesc(true)}
-                      className="text-slate-500 hover:text-white transition p-0.5 rounded hover:bg-slate-900"
+                      className="text-slate-500 hover:text-white transition p-0.5 rounded hover:bg-[#181818]"
                       title="Edit Description"
                     >
                       <Edit2 className="w-3 h-3" />
@@ -1730,7 +1730,7 @@ export default function ChatView({
                       onChange={(e) => setEditedDesc(e.target.value)}
                       rows={2}
                       placeholder="Enter description..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 resize-none"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-lg p-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#2A5FFF] resize-none"
                     />
                     <div className="flex justify-end gap-1">
                       <button
@@ -1742,7 +1742,7 @@ export default function ChatView({
                       </button>
                       <button
                         onClick={() => setIsEditingDesc(false)}
-                        className="px-2 py-1 bg-slate-800 text-slate-400 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+                        className="px-2 py-1 bg-[#141414] text-slate-400 hover:text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1"
                       >
                         <X className="w-3 h-3" />
                         <span>Cancel</span>
@@ -1758,9 +1758,9 @@ export default function ChatView({
 
               {/* Add Participant Section (Admin-only) */}
               {isCurrentUserAdmin && (
-                <div className="space-y-2 bg-slate-900/10 border border-slate-900/50 p-3 rounded-2xl">
+                <div className="space-y-2 bg-[#101010] border border-[#1D1D1D] p-3 rounded-2xl">
                   <span className="text-[9px] font-mono uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                    <UserPlus className="w-3.5 h-3.5 text-blue-500" />
+                    <UserPlus className="w-3.5 h-3.5 text-[#2A5FFF]" />
                     <span>Add Group Member</span>
                   </span>
                   <form onSubmit={handleAddParticipant} className="flex gap-1.5">
@@ -1769,12 +1769,12 @@ export default function ChatView({
                       value={addUsername}
                       onChange={(e) => setAddUsername(e.target.value)}
                       placeholder="Enter username..."
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+                      className="flex-1 bg-[#141414] border border-[#1D1D1D] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#2A5FFF]"
                     />
                     <button
                       type="submit"
                       disabled={!addUsername.trim()}
-                      className="px-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition cursor-pointer shrink-0 flex items-center justify-center"
+                      className="px-3 bg-[#1B3A7A] hover:bg-[#224A99] disabled:opacity-50 text-white rounded-lg text-xs font-bold transition cursor-pointer shrink-0 flex items-center justify-center"
                       title="Add user"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -1793,7 +1793,7 @@ export default function ChatView({
                     const isMe = user.id === currentUser.id;
 
                     return (
-                      <div key={user.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-900/10 border border-slate-900/50 hover:bg-slate-900/40 transition">
+                      <div key={user.id} className="flex items-center justify-between p-2 rounded-xl bg-[#101010] border border-[#1D1D1D] hover:bg-[#181818] transition">
                         <button
                           onClick={() => setSelectedProfileUser(user)}
                           className="flex items-center gap-2 min-w-0 text-left cursor-pointer hover:opacity-80 active:scale-98 transition flex-1"
@@ -1802,12 +1802,12 @@ export default function ChatView({
                             {user.avatarUrl ? (
                               <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-slate-800 text-[10px] font-bold flex items-center justify-center text-slate-400">
+                              <div className="w-6 h-6 rounded-full bg-[#141414] border border-[#1D1D1D] text-[10px] font-bold flex items-center justify-center text-slate-400">
                                 {user.displayName.charAt(0)}
                               </div>
                             )}
                             {user.status === "online" && (
-                              <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-slate-950 rounded-full"></span>
+                              <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-[#090909] rounded-full"></span>
                             )}
                           </div>
                           <div className="min-w-0 leading-none">
@@ -1825,11 +1825,11 @@ export default function ChatView({
                           
                           {/* Admin actions if current user is an Admin and this is not myself */}
                           {isCurrentUserAdmin && !isMe && (
-                            <div className="flex items-center gap-1 ml-2 border-l border-slate-800 pl-1.5">
+                            <div className="flex items-center gap-1 ml-2 border-l border-[#1D1D1D] pl-1.5">
                               {isAdmin ? (
                                 <button
                                   onClick={() => handleParticipantAction("demote", user.username)}
-                                  className="p-1 text-slate-500 hover:text-amber-500 hover:bg-slate-900 rounded transition cursor-pointer"
+                                  className="p-1 text-slate-500 hover:text-amber-500 hover:bg-[#181818] rounded transition cursor-pointer"
                                   title="Demote Admin"
                                 >
                                   <X className="w-3.5 h-3.5 text-red-400" />
@@ -1837,7 +1837,7 @@ export default function ChatView({
                               ) : (
                                 <button
                                   onClick={() => handleParticipantAction("promote", user.username)}
-                                  className="p-1 text-slate-500 hover:text-amber-500 hover:bg-slate-900 rounded transition cursor-pointer"
+                                  className="p-1 text-slate-500 hover:text-amber-500 hover:bg-[#181818] rounded transition cursor-pointer"
                                   title="Promote to Admin"
                                 >
                                   <Crown className="w-3.5 h-3.5 text-slate-500 hover:text-amber-450" />
@@ -1849,7 +1849,7 @@ export default function ChatView({
                                     handleParticipantAction("kick", user.username);
                                   }
                                 }}
-                                className="p-1 text-slate-500 hover:text-red-400 hover:bg-slate-900 rounded transition cursor-pointer"
+                                className="p-1 text-slate-500 hover:text-red-400 hover:bg-[#181818] rounded transition cursor-pointer"
                                 title="Kick from Group"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -1871,7 +1871,7 @@ export default function ChatView({
                     setShowGroupInfo(false);
                   }
                 }}
-                className="w-full py-2 bg-red-950/30 hover:bg-red-950/50 border border-red-500/20 text-red-400 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                className="w-full py-2 bg-red-950/20 hover:bg-red-950/40 border border-red-500/10 text-red-400 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer mt-1"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Depart Group Chat</span>
@@ -1904,7 +1904,7 @@ export default function ChatView({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setTapMenuMessage(null)}
-              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+              className="absolute inset-0 bg-[#090909]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
             >
               <motion.div
                 initial={{ scale: 0.95, y: 15, opacity: 0 }}
@@ -1912,21 +1912,21 @@ export default function ChatView({
                 exit={{ scale: 0.95, y: 15, opacity: 0 }}
                 transition={{ type: "spring", damping: 25, stiffness: 350 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-left relative overflow-hidden"
+                className="bg-[#0D0D0D] border border-[#1D1D1D] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-left relative overflow-hidden"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center justify-between border-b border-[#1D1D1D] pb-3">
                   <span className="text-xs font-mono text-slate-500 uppercase tracking-widest">Message Options</span>
                   <button 
                     onClick={() => setTapMenuMessage(null)}
-                    className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                    className="p-1 rounded-full hover:bg-[#181818] text-slate-400 hover:text-white transition cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Quick Reactions Selection */}
-                <div className="flex justify-between bg-slate-950/60 border border-slate-900/80 p-2 rounded-full px-3">
+                <div className="flex justify-between bg-[#141414] border border-[#1D1D1D] p-2 rounded-full px-3">
                   {["👍", "❤️", "😂", "😮", "😢", "🙏"].map(emoji => (
                     <button
                       key={emoji}
@@ -1943,7 +1943,7 @@ export default function ChatView({
 
                 {/* Text preview of message */}
                 {tapMenuMessage.mediaType === "text" && (
-                  <div className="bg-slate-950/40 p-3 rounded-2xl border border-slate-800/40 text-[11px] text-slate-400 italic max-h-24 overflow-y-auto break-words leading-relaxed">
+                  <div className="bg-[#141414] p-3 rounded-2xl border border-[#1D1D1D] text-[11px] text-slate-400 italic max-h-24 overflow-y-auto break-words leading-relaxed">
                     "{tapMenuMessage.text}"
                   </div>
                 )}
@@ -1957,9 +1957,9 @@ export default function ChatView({
                       setReplyingToMessage(tapMenuMessage);
                       setTapMenuMessage(null);
                     }}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-slate-800/40 hover:border-slate-700 text-left text-xs text-white font-medium transition cursor-pointer"
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#1D1D1D] text-left text-xs text-white font-medium transition cursor-pointer"
                   >
-                    <CornerUpLeft className="w-4 h-4 text-blue-400" />
+                    <CornerUpLeft className="w-4 h-4 text-[#2A5FFF]" />
                     <span>Reply to Message</span>
                   </button>
 
@@ -1969,7 +1969,7 @@ export default function ChatView({
                       toggleStarMessage(tapMenuMessage.id);
                       setTapMenuMessage(null);
                     }}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-slate-800/40 hover:border-slate-700 text-left text-xs text-white font-medium transition cursor-pointer"
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#1D1D1D] text-left text-xs text-white font-medium transition cursor-pointer"
                   >
                     <Star className={`w-4 h-4 ${isStarred ? "text-yellow-400 fill-yellow-400" : "text-slate-400"}`} />
                     <span>{isStarred ? "Unstar Message" : "Star Message"}</span>
@@ -1983,7 +1983,7 @@ export default function ChatView({
                         setEditingText(tapMenuMessage.text);
                         setTapMenuMessage(null);
                       }}
-                      className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800/30 hover:bg-slate-800 border border-slate-800/40 hover:border-slate-700 text-left text-xs text-white font-medium transition cursor-pointer"
+                      className="flex items-center gap-3 p-3 rounded-2xl bg-[#141414] hover:bg-[#181818] border border-[#1D1D1D] text-left text-xs text-white font-medium transition cursor-pointer"
                     >
                       <Edit2 className="w-4 h-4 text-emerald-400" />
                       <span>Edit Message</span>
@@ -2017,7 +2017,7 @@ export default function ChatView({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setEditingMessage(null)}
-            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="absolute inset-0 bg-[#090909]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           >
             <motion.div
               initial={{ scale: 0.95, y: 15, opacity: 0 }}
@@ -2025,17 +2025,17 @@ export default function ChatView({
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
               transition={{ type: "spring", damping: 25, stiffness: 350 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-slate-900 border border-slate-800 rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-left relative"
+              className="bg-[#0D0D0D] border border-[#1D1D1D] rounded-3xl p-5 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-left relative"
             >
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-[#1D1D1D] pb-3">
                 <div className="flex items-center gap-2">
-                  <Edit2 className="w-4 h-4 text-blue-400" />
+                  <Edit2 className="w-4 h-4 text-[#2A5FFF]" />
                   <span className="text-xs font-bold text-white uppercase tracking-wider">Modify Message</span>
                 </div>
                 <button 
                   onClick={() => setEditingMessage(null)}
-                  className="p-1 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                  className="p-1 rounded-full hover:bg-[#181818] text-slate-400 hover:text-white transition cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -2046,7 +2046,7 @@ export default function ChatView({
                 <textarea
                   value={editingText}
                   onChange={(e) => setEditingText(e.target.value)}
-                  className="w-full h-24 bg-slate-950/80 border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500/50 resize-none font-normal leading-relaxed"
+                  className="w-full h-24 bg-[#141414] border border-[#1D1D1D] rounded-2xl p-3 text-slate-100 text-xs focus:outline-none focus:ring-1 focus:ring-[#2A5FFF]/50 resize-none font-normal leading-relaxed"
                   placeholder="Edit your message text..."
                   autoFocus
                 />
@@ -2056,14 +2056,14 @@ export default function ChatView({
               <div className="flex gap-2">
                 <button
                   onClick={() => setEditingMessage(null)}
-                  className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-[#141414] hover:bg-[#181818] text-slate-300 text-xs font-bold transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveEdit}
                   disabled={!editingText.trim()}
-                  className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-[#1B3A7A] hover:bg-[#224A99] disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer"
                 >
                   Save Changes
                 </button>

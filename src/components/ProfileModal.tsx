@@ -128,7 +128,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 select-none">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-4 select-none animate-fade-in">
       <motion.div
         initial={{ opacity: 0, scale: 0.93, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -136,14 +136,14 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
         transition={{ type: "spring", damping: 25, stiffness: 350 }}
         className={`w-full max-w-sm border rounded-3xl overflow-hidden shadow-2xl relative ${
           isLucy 
-            ? "bg-gradient-to-b from-purple-950 via-slate-950 to-black border-purple-500/30 shadow-[0_0_25px_rgba(168,85,247,0.25)]" 
-            : "bg-slate-950 border-blue-500/15"
+            ? "bg-gradient-to-b from-purple-950 via-[#0D0D0D] to-[#090909] border-purple-500/30 shadow-[0_0_25px_rgba(168,85,247,0.25)]" 
+            : "bg-[#0D0D0D] border-[#1D1D1D]"
         }`}
       >
         {/* Top Close Button (Floating) */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/40 hover:bg-slate-800/80 text-slate-300 hover:text-white border border-white/5 transition-all cursor-pointer"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-[#090909]/40 hover:bg-[#181818]/80 text-[#A8A8A8] hover:text-white border border-[#1D1D1D] transition-all cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -151,23 +151,23 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
         {/* Hero Section with Large Avatar & Status */}
         <div className={`relative h-48 flex items-end justify-center pb-6 border-b ${
           isLucy 
-            ? "from-purple-900/35 to-slate-950 border-purple-500/20 bg-gradient-to-b" 
-            : "from-blue-900/20 to-slate-950 border-blue-500/10 bg-gradient-to-b"
+            ? "from-purple-900/35 to-[#0D0D0D] border-purple-500/20 bg-gradient-to-b" 
+            : "from-[#1B3A7A]/10 to-[#0D0D0D] border-[#1D1D1D] bg-gradient-to-b"
         }`}>
           <div className={`absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] via-transparent to-transparent pointer-events-none ${
-            isLucy ? "from-purple-600/15" : "from-blue-600/10"
+            isLucy ? "from-purple-600/15" : "from-[#2A5FFF]/5"
           }`} />
           
           <div className="relative">
             {/* Avatar container */}
-            <div className={`w-28 h-28 rounded-full border-4 border-slate-950 bg-slate-900 shadow-xl overflow-hidden relative flex items-center justify-center ${
+            <div className={`w-28 h-28 rounded-full border-4 border-[#090909] bg-[#141414] shadow-xl overflow-hidden relative flex items-center justify-center ${
               isLucy ? "ring-2 ring-pink-500/40" : ""
             }`}>
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt={user.displayName} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               ) : (
                 <div className={`w-full h-full flex items-center justify-center text-3xl font-bold ${
-                  isLucy ? "bg-gradient-to-tr from-purple-600 to-pink-500" : "bg-gradient-to-tr from-blue-600 to-indigo-900"
+                  isLucy ? "bg-gradient-to-tr from-purple-600 to-pink-500" : "bg-gradient-to-tr from-[#1B3A7A] to-slate-900"
                 }`}>
                   {user.displayName.charAt(0).toUpperCase()}
                 </div>
@@ -175,7 +175,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
             </div>
 
             {/* Pulsing Status Dot */}
-            <span className={`absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-slate-950 flex items-center justify-center ${user.status === "online" ? (isLucy ? "bg-pink-500" : "bg-emerald-500") : "bg-slate-500"}`}>
+            <span className={`absolute bottom-1 right-1 w-6 h-6 rounded-full border-4 border-[#090909] flex items-center justify-center ${user.status === "online" ? (isLucy ? "bg-pink-500" : "bg-emerald-500") : "bg-slate-500"}`}>
               <span className={`w-2.5 h-2.5 rounded-full ${user.status === "online" ? (isLucy ? "bg-pink-400 animate-pulse" : "bg-emerald-400 animate-pulse") : "bg-slate-400"}`} />
             </span>
           </div>
@@ -186,15 +186,15 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
           <div className="p-6 space-y-5">
             <div className="text-center space-y-1">
               <h3 className="text-xl font-bold text-white tracking-tight">{user.displayName}</h3>
-              <span className={`text-sm font-medium ${isLucy ? "text-purple-300" : "text-blue-400"}`}>@{user.username}</span>
+              <span className={`text-sm font-medium ${isLucy ? "text-purple-300" : "text-[#2A5FFF]"}`}>@{user.username}</span>
 
               {user.customStatus && (
                 <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm mt-2 mx-auto ${
                   isLucy 
                     ? "bg-pink-500/10 border-pink-500/20 text-pink-300" 
-                    : "bg-blue-500/10 border-blue-500/20 text-blue-300"
+                    : "bg-[#2A5FFF]/10 border-[#2A5FFF]/20 text-[#2A5FFF]"
                 }`}>
-                  <Sparkles className={`w-3 h-3 shrink-0 ${isLucy ? "text-pink-400" : "text-blue-400"}`} />
+                  <Sparkles className={`w-3 h-3 shrink-0 ${isLucy ? "text-pink-400" : "text-[#2A5FFF]"}`} />
                   <span>{user.customStatus}</span>
                 </div>
               )}
@@ -205,13 +205,13 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
               <div className={`border rounded-2xl p-4 space-y-2 ${
                 isLucy 
                   ? "bg-purple-950/20 border-purple-900/30" 
-                  : "bg-slate-900/60 border-slate-900"
+                  : "bg-[#101010] border-[#1D1D1D]"
               }`}>
-                <div className="flex items-center gap-2 text-slate-400 text-xs font-bold tracking-wider uppercase">
+                <div className="flex items-center gap-2 text-[#A8A8A8] text-xs font-bold tracking-wider uppercase">
                   {isLucy ? (
                     <Sparkles className="w-3.5 h-3.5 text-pink-400" />
                   ) : (
-                    <Info className="w-3.5 h-3.5 text-blue-500" />
+                    <Info className="w-3.5 h-3.5 text-[#2A5FFF]" />
                   )}
                   <span>About</span>
                 </div>
@@ -222,17 +222,17 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
 
               {/* Status indicators */}
               <div className="grid grid-cols-2 gap-3">
-                <div className={`border rounded-xl p-3 flex flex-col justify-center ${isLucy ? "bg-purple-950/10 border-purple-900/20" : "bg-slate-900/30 border-slate-900"}`}>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Status</span>
+                <div className={`border rounded-xl p-3 flex flex-col justify-center ${isLucy ? "bg-purple-950/10 border-purple-900/20" : "bg-[#101010] border-[#1D1D1D]"}`}>
+                  <span className="text-[10px] text-[#707070] uppercase font-bold tracking-wider mb-0.5">Status</span>
                   <span className={`text-xs font-bold ${user.status === "online" ? (isLucy ? "text-pink-400" : "text-emerald-400") : "text-slate-400"}`}>
                     {user.status === "online" ? "Online" : "Offline"}
                   </span>
                 </div>
 
-                <div className={`border rounded-xl p-3 flex flex-col justify-center ${isLucy ? "bg-purple-950/10 border-purple-900/20" : "bg-slate-900/30 border-slate-900"}`}>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Last Seen</span>
+                <div className={`border rounded-xl p-3 flex flex-col justify-center ${isLucy ? "bg-purple-950/10 border-purple-900/20" : "bg-[#101010] border-[#1D1D1D]"}`}>
+                  <span className="text-[10px] text-[#707070] uppercase font-bold tracking-wider mb-0.5">Last Seen</span>
                   <div className="flex items-center gap-1 text-slate-300 text-xs font-medium truncate">
-                    <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                    <Clock className="w-3 h-3 text-[#707070] shrink-0" />
                     <span>{user.status === "online" ? "Active Now" : formatLastSeen(user.lastSeen)}</span>
                   </div>
                 </div>
@@ -250,7 +250,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                   className={`w-full font-bold py-2.5 px-4 rounded-xl text-xs tracking-wide transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer ${
                     isLucy 
                       ? "bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white shadow-[0_4px_15px_rgba(236,72,153,0.3)]" 
-                      : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_4px_15px_rgba(37,99,235,0.2)]"
+                      : "bg-[#1B3A7A] hover:bg-[#224A99] text-white"
                   }`}
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -266,7 +266,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                     className={`font-semibold py-2.5 px-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center gap-1.5 border cursor-pointer ${
                       isBlocked
                         ? "bg-emerald-950/20 border-emerald-500/30 text-emerald-400 hover:bg-emerald-950/40"
-                        : "bg-red-950/20 border-red-500/30 text-red-400 hover:bg-red-950/40"
+                        : "bg-[#141414] border-[#1D1D1D] hover:border-red-500/20 text-red-400 hover:bg-[#181818]"
                     }`}
                   >
                     <span>{isBlocked ? "🚫 Unblock" : "🚫 Block User"}</span>
@@ -274,7 +274,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
 
                   <button
                     onClick={() => setShowReportForm(true)}
-                    className="bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-semibold py-2.5 px-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="bg-[#141414] border border-[#1D1D1D] hover:border-red-500/20 text-[#A8A8A8] hover:text-white hover:bg-[#181818] font-semibold py-2.5 px-3 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Flag className="w-3.5 h-3.5 text-red-500" />
                     <span>🚩 Report</span>
@@ -287,7 +287,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
           <div className="p-6 space-y-4">
             <div className="text-center">
               <h3 className="text-lg font-bold text-white">Report User</h3>
-              <p className="text-xs text-slate-500 mt-1">Report @{user.username} for investigation.</p>
+              <p className="text-xs text-[#707070] mt-1">Report @{user.username} for investigation.</p>
             </div>
 
             <form onSubmit={handleReportSubmit} className="space-y-4">
@@ -306,11 +306,11 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
               {!reportSuccess && (
                 <>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Reason</label>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Reason</label>
                     <select
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] appearance-none cursor-pointer"
                     >
                       <option value="Spam">Spam</option>
                       <option value="Harassment">Harassment</option>
@@ -321,14 +321,14 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 tracking-wide">Description</label>
+                    <label className="text-xs font-semibold text-[#A8A8A8] tracking-wide">Description</label>
                     <textarea
                       required
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Please provide details about this issue..."
                       rows={3}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 resize-none"
+                      className="w-full bg-[#141414] border border-[#1D1D1D] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#2A5FFF] resize-none"
                     />
                   </div>
                 </>
@@ -344,7 +344,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                     setReason("Spam");
                     setDescription("");
                   }}
-                  className="w-1/3 bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 font-medium py-2.5 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center cursor-pointer"
+                  className="w-1/3 bg-[#141414] border border-[#1D1D1D] hover:bg-[#181818] text-[#A8A8A8] hover:text-white font-medium py-2.5 rounded-xl text-xs transition active:scale-[0.98] flex items-center justify-center cursor-pointer"
                 >
                   Back
                 </button>
@@ -353,7 +353,7 @@ export default function ProfileModal({ user, onClose, onStartDirectChat }: Profi
                   <button
                     type="submit"
                     disabled={reportLoading}
-                    className="w-2/3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
+                    className="w-2/3 bg-[#1B3A7A] hover:bg-[#224A99] active:scale-[0.98] text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     {reportLoading ? (
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
