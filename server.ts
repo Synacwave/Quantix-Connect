@@ -15,7 +15,10 @@ import apiRoutes from "./server/routes.js";
 
 const app = express();
 const server = http.createServer(app);
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+// Enable trust proxy for reverse proxies (Nginx, Cloud Run, VPS)
+app.set("trust proxy", 1);
 
 // Security Middlewares
 // Use custom helmet settings that allow loading external assets and inline scripts/styles
@@ -84,7 +87,7 @@ async function setupFrontend() {
 
 setupFrontend().then(() => {
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`✨ Quantix Connect is running on http://localhost:${PORT}`);
+    console.log(`✨ Quantix Connect is running on port ${PORT}`);
   });
 }).catch(err => {
   console.error("Failed to start server:", err);

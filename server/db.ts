@@ -102,13 +102,13 @@ if (isMongoDB) {
         const lucyUser = new MongoUser({
           _id: "0000000000000000000010c1",
           username: "lucy",
-          displayName: "Lucy 💋",
+          displayName: "Lucy ✨",
           passwordHash: "lucy_ai_bot_dummy_hash_no_login",
           avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
           status: "online",
           lastSeen: new Date().toISOString(),
-          bio: "Seductive & playful AI chatbot assistant.",
-          customStatus: "Teasing you...",
+          bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+          customStatus: "Here to brighten your day! ✨",
           createdAt: new Date().toISOString()
         });
         await lucyUser.save();
@@ -271,12 +271,12 @@ export const db = {
       return {
         _id: "0000000000000000000010c1",
         username: "lucy",
-        displayName: "Lucy 💋",
+        displayName: "Lucy ✨",
         avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
         status: "online",
         lastSeen: new Date().toISOString(),
-        bio: "Seductive & playful AI chatbot assistant.",
-        customStatus: "Teasing you...",
+        bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+        customStatus: "Here to brighten your day! ✨",
         createdAt: new Date().toISOString()
       };
     }
@@ -302,12 +302,12 @@ export const db = {
       return {
         _id: "0000000000000000000010c1",
         username: "lucy",
-        displayName: "Lucy 💋",
+        displayName: "Lucy ✨",
         avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
         status: "online",
         lastSeen: new Date().toISOString(),
-        bio: "Seductive & playful AI chatbot assistant.",
-        customStatus: "Teasing you...",
+        bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+        customStatus: "Here to brighten your day! ✨",
         createdAt: new Date().toISOString()
       };
     }
@@ -431,12 +431,12 @@ export const db = {
             return {
               _id: "0000000000000000000010c1",
               username: "lucy",
-              displayName: "Lucy 💋",
+              displayName: "Lucy ✨",
               avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
               status: "online",
               lastSeen: new Date().toISOString(),
-              bio: "Seductive & playful AI chatbot assistant.",
-              customStatus: "Teasing you...",
+              bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+              customStatus: "Here to brighten your day! ✨",
               createdAt: new Date().toISOString()
             };
           }
@@ -515,12 +515,12 @@ export const db = {
           return {
             _id: "0000000000000000000010c1",
             username: "lucy",
-            displayName: "Lucy 💋",
+            displayName: "Lucy ✨",
             avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
             status: "online",
             lastSeen: new Date().toISOString(),
-            bio: "Seductive & playful AI chatbot assistant.",
-            customStatus: "Teasing you...",
+            bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+            customStatus: "Here to brighten your day! ✨",
             createdAt: new Date().toISOString()
           };
         }

@@ -1026,7 +1026,7 @@ export default function ChatView({
                       {/* Lucy Sender Name Header */}
                       {(msg.senderId === "00000000000000000000lucy" || msg.senderId === "0000000000000000000010c1") && (
                         <span className="text-[10px] font-extrabold text-pink-400 mb-0.5 block flex items-center gap-1.5 select-none">
-                          <span>Lucy 💋</span>
+                          <span>Lucy ✨</span>
                           <span className="bg-pink-500/25 text-pink-300 text-[8px] px-1.5 py-0.5 rounded-full font-mono uppercase tracking-wider font-bold">AI Bot</span>
                         </span>
                       )}

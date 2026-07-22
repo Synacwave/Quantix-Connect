@@ -12,6 +12,7 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [avatarBase64, setAvatarBase64] = useState("");
+  const [website, setWebsite] = useState(""); // Invisible honeypot field
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,7 +46,7 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
     }
 
     const payload = isRegistering 
-      ? { username, displayName, password, avatarUrl: avatarBase64 }
+      ? { username, displayName, password, avatarUrl: avatarBase64, website }
       : { username, password };
 
     const endpoint = isRegistering ? "/api/auth/register" : "/api/auth/login";
@@ -139,6 +140,19 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
               animate={{ opacity: 1, height: "auto" }}
               className="space-y-4 overflow-hidden"
             >
+              {/* Invisible Honeypot Field */}
+              <div className="opacity-0 absolute -z-50 h-0 w-0 overflow-hidden pointer-events-none" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input
+                  type="text"
+                  id="website"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
               {/* Profile Pic Upload Widget */}
               <div className="flex flex-col items-center gap-2 mb-2">
                 <div 

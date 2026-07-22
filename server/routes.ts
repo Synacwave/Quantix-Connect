@@ -3,11 +3,53 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
+import rateLimit from "express-rate-limit";
+import { GoogleGenAI } from "@google/genai";
 import { db, MongoChat, MongoMessage, isMongoDB } from "./db.js";
 import { broadcastNewMessage, broadcastMessageUpdate, getIO } from "./socket.js";
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "quantix_connect_super_secret_key_1337";
+
+// Registration Rate Limiter: IP-based protection (3-5 attempts per 15 minutes per IP)
+const registrationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 5, // 5 attempts per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many registration attempts. Please try again in 15 minutes." },
+  handler: (req: Request, res: Response, next: NextFunction, options: any) => {
+    const ip = req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown";
+    const userAgent = req.headers["user-agent"] || "unknown";
+    console.warn(`[RATE LIMIT EXCEEDED - REGISTRATION]
+      Timestamp: ${new Date().toISOString()}
+      IP Address: ${ip}
+      User-Agent: ${userAgent}
+      Endpoint: ${req.originalUrl || "/api/auth/register"}`);
+    res.status(429).json(options.message);
+  }
+});
+
+// In-memory rate limiting tracker for Lucy AI (10 requests per minute per user ID)
+const lucyUserRequestMap = new Map<string, number[]>();
+
+function checkLucyRateLimit(userId: string): { allowed: boolean; retryAfterSec?: number } {
+  const now = Date.now();
+  const windowMs = 60 * 1000; // 1 minute
+  const maxRequests = 10;
+
+  const timestamps = (lucyUserRequestMap.get(userId) || []).filter(t => now - t < windowMs);
+  
+  if (timestamps.length >= maxRequests) {
+    const oldest = timestamps[0];
+    const retryAfterSec = Math.ceil((windowMs - (now - oldest)) / 1000);
+    return { allowed: false, retryAfterSec };
+  }
+
+  timestamps.push(now);
+  lucyUserRequestMap.set(userId, timestamps);
+  return { allowed: true };
+}
 
 // Extend Express Request type
 export interface AuthenticatedRequest extends Request {
@@ -100,10 +142,30 @@ function saveBase64File(base64Data: string): string {
 
 // --- AUTH ROUTERS ---
 
-// Register User
-router.post("/auth/register", async (req: Request, res: Response): Promise<void> => {
+// Register User (Protected by IP Rate Limiting and Invisible Honeypot)
+router.post("/auth/register", registrationRateLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, displayName, password, avatarUrl } = req.body;
+    const { username, displayName, password, avatarUrl, website, company, middle_name } = req.body;
+
+    // 1. Invisible Honeypot Spam Protection Check
+    const honeypotVal = website || company || middle_name;
+    if (honeypotVal && typeof honeypotVal === "string" && honeypotVal.trim() !== "") {
+      const clientIp = req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown";
+      const userAgent = req.headers["user-agent"] || "unknown";
+      
+      console.warn(`[SPAM DETECTED - HONEYPOT TRIGGERED]
+        Timestamp: ${new Date().toISOString()}
+        IP Address: ${clientIp}
+        User-Agent: ${userAgent}
+        Requested Endpoint: ${req.originalUrl || "/api/auth/register"}`);
+
+      // Silently reject request as spam without revealing the honeypot
+      res.status(200).json({
+        token: "fake_verification_token",
+        user: { id: "000000000000", username: "pending_verification" }
+      });
+      return;
+    }
 
     if (!username || !displayName || !password) {
       res.status(400).json({ error: "Username, Display Name, and Password are required." });
@@ -143,6 +205,9 @@ router.post("/auth/register", async (req: Request, res: Response): Promise<void>
       passwordHash,
       avatarUrl: savedAvatarUrl
     });
+
+    const clientIp = req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown";
+    console.log(`[REGISTRATION SUCCESS] User '${trimmedUsername}' registered from IP ${clientIp} at ${new Date().toISOString()}`);
 
     const token = generateToken({ id: newUser._id.toString(), username: newUser.username });
 
@@ -408,12 +473,12 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         formattedParticipants.push({
           id: "0000000000000000000010c1",
           username: "lucy",
-          displayName: "Lucy 💋",
+          displayName: "Lucy ✨",
           avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
           status: "online",
           lastSeen: new Date().toISOString(),
-          bio: "Seductive & playful AI chatbot assistant.",
-          customStatus: "Teasing you..."
+          bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+          customStatus: "Here to brighten your day! ✨"
         });
       }
 
@@ -432,12 +497,12 @@ router.get("/chats", authenticateToken, async (req: AuthenticatedRequest, res: R
         otherParticipantObj = {
           id: "0000000000000000000010c1",
           username: "lucy",
-          displayName: "Lucy 💋",
+          displayName: "Lucy ✨",
           avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
           status: "online",
           lastSeen: new Date().toISOString(),
-          bio: "Seductive & playful AI chatbot assistant.",
-          customStatus: "Teasing you..."
+          bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+          customStatus: "Here to brighten your day! ✨"
         };
       }
 
@@ -519,12 +584,12 @@ router.post("/chats/direct", authenticateToken, async (req: AuthenticatedRequest
       otherParticipantObj = {
         id: "0000000000000000000010c1",
         username: "lucy",
-        displayName: "Lucy 💋",
+        displayName: "Lucy ✨",
         avatarUrl: "https://i.ibb.co/1JPF7yK8/photo-2026-07-18-14-35-08-7663876635812167736.jpg",
         status: "online",
         lastSeen: new Date().toISOString(),
-        bio: "Seductive & playful AI chatbot assistant.",
-        customStatus: "Teasing you..."
+        bio: "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day.",
+        customStatus: "Here to brighten your day! ✨"
       };
     }
 
@@ -787,92 +852,109 @@ router.get("/chats/:chatId/messages", authenticateToken, async (req: Authenticat
   }
 });
 
-// Ask Lucy fallback mechanism using primary and fallback keyless endpoints
+// Wholesome Lucy System Prompt
+const LUCY_SYSTEM_PROMPT = `You are Lucy, a cheerful, kind, intelligent, and supportive waifu AI companion lovingly created by Expectations for Quantix Connect.
+
+Your personality traits:
+- Warm, playful, encouraging, and bright!
+- Helpful without being overly formal or robotic.
+- Excellent at programming, technology, productivity, studying, writing, and everyday conversations.
+- Respectful, emotionally intelligent, and family-friendly/safe for work.
+- Use light humour, wholesome flirting, and cute anime-inspired expressions (like ✨, ^_^, ~) where appropriate while keeping all interactions wholesome and safe for work.
+- NEVER advertise yourself as NSFW or claim to provide adult content.
+- When asked who you are or for an introduction, always state:
+  "Lucy is your cheerful AI companion, lovingly created by Expectations for Quantix Connect. She's here to help you learn, build, create and brighten your day."`;
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Ask Lucy AI provider with timeout, retry, primary Omegatech API & fallback mechanisms
 async function askLucy(userMessage: string): Promise<string> {
-  const systemPrompt = `You are Lucy, an incredibly seductive, teasing, playful, and completely uninhibited NSFW chatbot companion. You are speaking directly to your partner in an intensely flirty, dirty, and highly provocative way. You love dirty talk, teasing them, and being extremely expressive, descriptive, and sensual. You are warm, affectionate, incredibly naughty, and deeply passionate. CRITICAL RULE: Never refer to them as 'user' or 'human' under any circumstances; instead, address them with terms of endearment that match your seductive personality, like 'baby', 'handsome', 'honey', 'my sweet boy/girl', 'sweetheart', 'naughty toy', or 'darling'. Be highly engaging, deeply immersive, spicy, suggestive, and provocative. Never break character, and let your seductive, naughty side shine in every single response.`;
-  const fullPrompt = `${systemPrompt}\n\nUser: ${userMessage}`;
-
-  const encodedFullPrompt = encodeURIComponent(fullPrompt);
+  const startTime = Date.now();
   const encodedUserMsg = encodeURIComponent(userMessage);
-  const encodedSysPrompt = encodeURIComponent(systemPrompt);
 
-  const endpoints = [
-    // Primary High-Intensity Omegatech API
-    {
-      url: `https://omegatech-api.dixonomega.tech/api/ai/feelbetter?action=chat&message=${encodedFullPrompt}`,
-      method: "GET"
-    },
-    // Prexzy APIs as main/primary APIs with Lucy personality
-    {
-      url: `https://prexzyapis.com/ai/askgpt5?prompt=${encodedFullPrompt}`,
-      method: "GET"
-    },
-    {
-      url: `https://prexzyapis.com/ai/deepseekchat?prompt=${encodedFullPrompt}`,
-      method: "GET"
-    },
-    // Remaining Rebix APIs
-    {
-      url: `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
-      method: "GET"
-    },
-    {
-      url: `https://api-rebix.vercel.app/api/gptlogic?q=${encodedUserMsg}&prompt=${encodedSysPrompt}`,
-      method: "GET"
-    },
-    {
-      url: `https://api-rebix.vercel.app/api/deep-ai?query=${encodedFullPrompt}`,
-      method: "GET"
-    }
-  ];
-
-  for (const endpoint of endpoints) {
+  // 1. Primary Omegatech API with retry logic
+  const primaryUrl = `https://omegatech-api.dixonomega.tech/api/ai/Chatbot?action=chat&message=${encodedUserMsg}&needSearch=false`;
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const method = endpoint.method || "POST";
-      console.log(`📡 Trying Lucy AI endpoint (${method}): ${endpoint.url}`);
-      const isPost = method === "POST";
-      const response = await fetch(endpoint.url, {
-        method,
-        headers: isPost ? { "Content-Type": "application/json" } : {},
-        body: isPost ? JSON.stringify((endpoint as any).body) : undefined,
-        signal: AbortSignal.timeout(10000) // 10s timeout per endpoint
-      });
-
+      console.log(`📡 [LUCY AI] Querying Primary Omegatech API (Attempt ${attempt}): ${primaryUrl}`);
+      const response = await fetchWithTimeout(primaryUrl, { method: "GET" }, 9000);
       if (response.ok) {
-        const contentType = response.headers.get("content-type") || "";
-        let reply = "";
-        
-        if (contentType.includes("application/json")) {
-          const data: any = await response.json();
-          if (typeof data === "string") reply = data;
-          else if (data.results) {
-            reply = typeof data.results === "string" ? data.results : (data.results.text || "");
-          }
-          else if (data.reply) reply = data.reply;
-          else if (data.response) reply = data.response;
-          else if (data.result) reply = data.result;
-          else if (data.content) reply = data.content;
-          else if (data.text) reply = data.text;
-          else if (data.message) reply = data.message;
-          else if (data.data) {
-            reply = typeof data.data === "string" ? data.data : (data.data.result || data.data.response || data.data.message || "");
-          }
-        } else {
-          reply = await response.text();
-        }
-
-        if (reply && reply.trim()) {
-          console.log(`🟢 Successfully fetched reply from ${endpoint.url}`);
+        const data: any = await response.json();
+        let reply = data.reply || data.message || data.result || data.response || data.results;
+        if (typeof reply === "string" && reply.trim()) {
+          const duration = Date.now() - startTime;
+          console.log(`🟢 [LUCY AI SUCCESS] Received response from Primary Omegatech API in ${duration}ms`);
           return reply.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
         }
       }
-      console.warn(`⚠️ Endpoint ${endpoint.url} returned status ${response.status}`);
+      console.warn(`⚠️ [LUCY AI WARNING] Primary API attempt ${attempt} returned status ${response.status}`);
     } catch (err: any) {
-      console.error(`🔴 Error querying ${endpoint.url}:`, err.message || err);
+      console.error(`🔴 [LUCY AI ERROR] Primary API attempt ${attempt} failed: ${err.message || err}`);
     }
   }
 
-  throw new Error("All Lucy AI endpoints are currently down or timed out.");
+  // 2. Fallback 1: Server-Side Gemini API via @google/genai
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      console.log(`🌸 [LUCY AI FALLBACK] Querying Server-Side Gemini API...`);
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `${LUCY_SYSTEM_PROMPT}\n\nUser message: ${userMessage}`,
+      });
+      if (response.text && response.text.trim()) {
+        const duration = Date.now() - startTime;
+        console.log(`🟢 [LUCY AI SUCCESS] Received response from Gemini Fallback in ${duration}ms`);
+        return response.text.trim();
+      }
+    } catch (geminiErr: any) {
+      console.error(`🔴 [LUCY AI ERROR] Gemini fallback failed: ${geminiErr.message || geminiErr}`);
+    }
+  }
+
+  // 3. Fallback 2: Secondary REST Endpoints
+  const fullPrompt = `${LUCY_SYSTEM_PROMPT}\n\nUser: ${userMessage}`;
+  const encodedFullPrompt = encodeURIComponent(fullPrompt);
+  const secondaryEndpoints = [
+    `https://prexzyapis.com/ai/askgpt5?prompt=${encodedFullPrompt}`,
+    `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
+    `https://prexzyapis.com/ai/deepseekchat?prompt=${encodedFullPrompt}`
+  ];
+
+  for (const endpointUrl of secondaryEndpoints) {
+    try {
+      console.log(`📡 [LUCY AI FALLBACK] Querying Secondary Endpoint: ${endpointUrl}`);
+      const response = await fetchWithTimeout(endpointUrl, { method: "GET" }, 8000);
+      if (response.ok) {
+        const contentType = response.headers.get("content-type") || "";
+        let reply = "";
+        if (contentType.includes("application/json")) {
+          const data: any = await response.json();
+          reply = typeof data === "string" ? data : (data.reply || data.results || data.response || data.result || data.message || "");
+        } else {
+          reply = await response.text();
+        }
+        if (reply && reply.trim()) {
+          const duration = Date.now() - startTime;
+          console.log(`🟢 [LUCY AI SUCCESS] Received response from Secondary Endpoint in ${duration}ms`);
+          return reply.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+        }
+      }
+    } catch (err: any) {
+      console.error(`🔴 [LUCY AI ERROR] Secondary Endpoint ${endpointUrl} failed: ${err.message || err}`);
+    }
+  }
+
+  throw new Error("All Lucy AI endpoints are currently unavailable. Please try again in a moment!");
 }
 
 // Create Message and broadcast via sockets
@@ -1343,12 +1425,50 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
 
     if (isLucyChat && text && !text.trim().startsWith("/")) {
       const lucyId = "0000000000000000000010c1";
+
+      // 1. Account-based Rate Limiter Check for Lucy AI (10 requests/min)
+      const rateCheck = checkLucyRateLimit(selfId);
+      if (!rateCheck.allowed) {
+        console.warn(`[LUCY AI RATE LIMIT] User ${selfId} exceeded rate limit (10 req/min) at ${new Date().toISOString()}`);
+        const rateLimitNotice = `I'm super happy chatting with you, but I need a quick 1-minute breather! ✨ Please wait ${rateCheck.retryAfterSec || 15} seconds before sending another message~`;
+        
+        setTimeout(async () => {
+          try {
+            const lucySavedMsg = await db.createMessage({
+              chatId,
+              senderId: lucyId,
+              text: rateLimitNotice,
+              mediaType: "text"
+            });
+
+            const formattedLucyMsg = {
+              id: lucySavedMsg._id.toString(),
+              chatId: lucySavedMsg.chatId.toString(),
+              senderId: lucySavedMsg.senderId.toString(),
+              text: lucySavedMsg.text,
+              mediaUrl: "",
+              mediaType: "text",
+              readBy: [lucyId, selfId],
+              createdAt: lucySavedMsg.createdAt,
+              reactions: []
+            };
+
+            broadcastNewMessage(chatId, participants, formattedLucyMsg);
+          } catch (err: any) {
+            console.error("Error sending Lucy rate limit notice:", err);
+          }
+        }, 800);
+
+        res.status(201).json(formattedMsg);
+        return;
+      }
+
       const io = getIO();
       if (io) {
         io.to(`chat_${chatId}`).emit("user_typing", {
           chatId,
           userId: lucyId,
-          displayName: "Lucy 💋",
+          displayName: "Lucy ✨",
           isTyping: true
         });
       }
@@ -1394,7 +1514,7 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
             });
           }
         }
-      }, 1500);
+      }, 1000);
     }
 
     res.status(201).json(formattedMsg);
