@@ -3,6 +3,24 @@ import { motion } from "motion/react";
 import { X, Save, LogOut, Upload, User as UserIcon, Settings } from "lucide-react";
 import { User } from "../types";
 
+async function safeParseJson(response: Response): Promise<any> {
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+  
+  if (contentType.includes("application/json") || text.trim().startsWith("{") || text.trim().startsWith("[")) {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      // Ignore JSON parse failure and proceed to status check
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Server returned error ${response.status}: ${response.statusText || "Unable to process request"}`);
+  }
+  throw new Error("Invalid response format received from server.");
+}
+
 interface SettingsModalProps {
   user: User;
   onClose: () => void;
@@ -75,7 +93,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
         })
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
       if (!response.ok) {
         throw new Error(data.error || "Failed to submit report.");
       }
@@ -134,7 +152,7 @@ export default function SettingsModal({ user, onClose, onUpdateUser, onLogout }:
         })
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to update profile.");

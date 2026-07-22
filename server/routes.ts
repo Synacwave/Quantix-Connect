@@ -877,12 +877,21 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutM
 }
 
 // Ask Lucy AI provider with timeout, retry, primary Omegatech API & fallback mechanisms
-async function askLucy(userMessage: string): Promise<string> {
+async function askLucy(userMessage: string, chatHistoryText?: string): Promise<string> {
   const startTime = Date.now();
-  const encodedUserMsg = encodeURIComponent(userMessage);
+
+  // Construct the full prompt ensuring LUCY_SYSTEM_PROMPT is ALWAYS at the root,
+  // followed by conversation history if available, then the user's latest message.
+  let fullPrompt = LUCY_SYSTEM_PROMPT;
+  if (chatHistoryText && chatHistoryText.trim()) {
+    fullPrompt += `\n\nRecent Conversation History:\n${chatHistoryText.trim()}`;
+  }
+  fullPrompt += `\n\nUser: ${userMessage}`;
+
+  const encodedFullPrompt = encodeURIComponent(fullPrompt);
 
   // 1. Primary Omegatech API with retry logic
-  const primaryUrl = `https://omegatech-api.dixonomega.tech/api/ai/Chatbot?action=chat&message=${encodedUserMsg}&needSearch=false`;
+  const primaryUrl = `https://omegatech-api.dixonomega.tech/api/ai/Chatbot?action=chat&message=${encodedFullPrompt}&needSearch=false`;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       console.log(`📡 [LUCY AI] Querying Primary Omegatech API (Attempt ${attempt}): ${primaryUrl}`);
@@ -909,7 +918,7 @@ async function askLucy(userMessage: string): Promise<string> {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: `${LUCY_SYSTEM_PROMPT}\n\nUser message: ${userMessage}`,
+        contents: fullPrompt,
       });
       if (response.text && response.text.trim()) {
         const duration = Date.now() - startTime;
@@ -922,8 +931,6 @@ async function askLucy(userMessage: string): Promise<string> {
   }
 
   // 3. Fallback 2: Secondary REST Endpoints
-  const fullPrompt = `${LUCY_SYSTEM_PROMPT}\n\nUser: ${userMessage}`;
-  const encodedFullPrompt = encodeURIComponent(fullPrompt);
   const secondaryEndpoints = [
     `https://prexzyapis.com/ai/askgpt5?prompt=${encodedFullPrompt}`,
     `https://api-rebix.vercel.app/api/gpt-5?q=${encodedFullPrompt}`,
@@ -1475,7 +1482,21 @@ router.post("/messages", authenticateToken, async (req: AuthenticatedRequest, re
 
       setTimeout(async () => {
         try {
-          const replyText = await askLucy(text);
+          let conversationContext = "";
+          try {
+            const recentMsgs = await db.getMessages(chatId, selfId);
+            const slicedMsgs = recentMsgs ? recentMsgs.slice(-10) : [];
+            if (slicedMsgs && slicedMsgs.length > 0) {
+              conversationContext = slicedMsgs.map((m: any) => {
+                const isLucy = m.senderId === lucyId || m.senderId === "00000000000000000000lucy";
+                return `${isLucy ? "Lucy" : "User"}: ${m.text || ""}`;
+              }).filter((line: string) => line.trim().length > 5).join("\n");
+            }
+          } catch (ctxErr) {
+            console.error("Error fetching conversation context for Lucy:", ctxErr);
+          }
+
+          const replyText = await askLucy(text, conversationContext);
           const lucySavedMsg = await db.createMessage({
             chatId,
             senderId: lucyId,

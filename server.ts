@@ -61,6 +61,23 @@ app.use("/api", apiLimiter);
 // Mount API routes
 app.use("/api", apiRoutes);
 
+// Handle unmatched API routes to ensure JSON responses and prevent fallthrough to SPA HTML
+app.all("/api/*", (req: express.Request, res: express.Response) => {
+  res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
+});
+
+// Global Express error handler to ensure ALL errors return JSON instead of HTML error pages
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(`[EXPRESS ERROR] Path: ${req.originalUrl} | Error:`, err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  const statusCode = err.status || err.statusCode || 500;
+  res.status(statusCode).json({
+    error: err.message || "An internal server error occurred."
+  });
+});
+
 // Setup Socket.IO Server
 initializeSocket(server);
 

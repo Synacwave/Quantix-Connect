@@ -2,6 +2,24 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MessageSquare, Shield, Upload, Eye, EyeOff, Sparkles, AlertCircle, Send } from "lucide-react";
 
+async function safeParseJson(response: Response): Promise<any> {
+  const contentType = response.headers.get("content-type") || "";
+  const text = await response.text();
+  
+  if (contentType.includes("application/json") || text.trim().startsWith("{") || text.trim().startsWith("[")) {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      // Fall through
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Server error (${response.status}): ${response.statusText || "Authentication request failed"}`);
+  }
+  throw new Error("Invalid response format received from server.");
+}
+
 interface LoginScreenProps {
   onAuthSuccess: (token: string, user: any) => void;
 }
@@ -58,7 +76,7 @@ export default function LoginScreen({ onAuthSuccess }: LoginScreenProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await safeParseJson(response);
 
       if (!response.ok) {
         throw new Error(data.error || "Authentication failed. Please try again.");
