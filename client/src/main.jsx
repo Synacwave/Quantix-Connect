@@ -1,3 +1,12 @@
+// ================================================================
+// PROPERTY OF VANTA LABS
+// BY EXPECTATIONS HIMSELF
+//
+// SYNACWAVE
+// +2348132803772
+// t.me/GREAT_EXPECTATIONS
+// ================================================================
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
