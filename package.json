@@ -1,8 +1,10 @@
 {
-  "name": "react-example",
+  "name": "just-quantix-connect",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Just Quantix Connect — real-time messaging by Vanta Labs",
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
@@ -10,6 +12,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
+  "author": "Synacwave (Vanta Labs)",
+  "license": "MIT",
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
