@@ -6,3 +6,18 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Runtime uploads (user media) — do not commit
+uploads/*
+!uploads/.gitkeep
+
+# AI Studio / editor leftovers
+assets/
+.aistudio/
+**/.aistudio/
+
+# OS / IDE
+.idea/
+.vscode/
+*.swp
+Thumbs.db
