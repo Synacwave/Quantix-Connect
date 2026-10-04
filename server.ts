@@ -1,3 +1,12 @@
+// ================================================================
+// PROPERTY OF VANTA LABS
+// BY EXPECTATIONS HIMSELF
+//
+// SYNACWAVE
+// +2348132803772
+// t.me/GREAT_EXPECTATIONS
+// ================================================================
+
 import express from "express";
 import http from "http";
 import path from "path";
