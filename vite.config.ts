@@ -1,3 +1,12 @@
+// ================================================================
+// PROPERTY OF VANTA LABS
+// BY EXPECTATIONS HIMSELF
+//
+// SYNACWAVE
+// +2348132803772
+// t.me/GREAT_EXPECTATIONS
+// ================================================================
+
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
