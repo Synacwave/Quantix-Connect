@@ -1,6 +1,0 @@
-{
-  "name": "Quantix Connect",
-  "description": "A lightweight, modern, real-time messaging application with a beautiful dark blue theme and Telegram-like animations.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
