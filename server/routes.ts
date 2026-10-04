@@ -1,3 +1,12 @@
+// ================================================================
+// PROPERTY OF VANTA LABS
+// BY EXPECTATIONS HIMSELF
+//
+// SYNACWAVE
+// +2348132803772
+// t.me/GREAT_EXPECTATIONS
+// ================================================================
+
 import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -241,22 +250,25 @@ router.post("/auth/login", async (req: Request, res: Response): Promise<void> =>
 
     const trimmedUsername = username.trim().toLowerCase();
 
-    // Auto-create main administrator if it doesn't exist yet
-    if (trimmedUsername === "expectations" && password === "#Qwerty123") {
-      let adminUser = await db.findUserByUsername("expectations");
-      if (!adminUser) {
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash("#Qwerty123", salt);
-        await db.createUser({
-          username: "expectations",
-          displayName: "System Admin",
-          passwordHash,
-          avatarUrl: ""
-        });
-      }
+    // Optional admin bootstrap via env only (no hardcoded passwords in source)
+    let user = await db.findUserByUsername(trimmedUsername);
+    if (
+      !user &&
+      process.env.BOOTSTRAP_ADMIN_USER &&
+      process.env.BOOTSTRAP_ADMIN_PASS &&
+      trimmedUsername === process.env.BOOTSTRAP_ADMIN_USER.toLowerCase() &&
+      password === process.env.BOOTSTRAP_ADMIN_PASS
+    ) {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash(process.env.BOOTSTRAP_ADMIN_PASS, salt);
+      user = await db.createUser({
+        username: process.env.BOOTSTRAP_ADMIN_USER,
+        displayName: "Expectations",
+        passwordHash,
+        isAdmin: true
+      } as any);
     }
 
-    const user = await db.findUserByUsername(trimmedUsername);
     if (!user) {
       res.status(400).json({ error: "Invalid username or password." });
       return;
@@ -1821,10 +1833,15 @@ router.post("/messages/:messageId/poll/vote", authenticateToken, async (req: Aut
 
 // --- REPORT & BLOCKS & MODERATION ROUTES ---
 
-const TELEGRAM_BOT_TOKEN = "8681328218:AAGqy1CwwiCj1gwseCRFs6LXDM8r5o8KiHo";
-const TELEGRAM_CHAT_ID = "8471445778";
+// Telegram notifications optional — set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in env (never commit tokens)
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 
 async function sendTelegramMessage(text: string) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.log("[Telegram] Skipped (no TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID configured)");
+    return;
+  }
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     const res = await fetch(url, {
@@ -1846,6 +1863,9 @@ async function sendTelegramMessage(text: string) {
 }
 
 async function sendTelegramPhoto(caption: string, base64Data: string) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    return;
+  }
   try {
     const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
