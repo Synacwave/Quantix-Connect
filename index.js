@@ -8,7 +8,7 @@
 // ================================================================
 
 /**
- * Just Quantix Connect — root helper
+ * Quantix Connect — root helper
  *
  *   npm install
  *   npm run dev      → Express + Vite (port 3000)
@@ -17,7 +17,7 @@
  */
 
 console.log("\n  ╔══════════════════════════════════════════╗");
-console.log("  ║   JUST QUANTIX CONNECT — VANTA LABS      ║");
+console.log("  ║   QUANTIX CONNECT — VANTA LABS      ║");
 console.log("  ╚══════════════════════════════════════════╝\n");
 console.log("  npm install");
 console.log("  npm run dev      Start API + client");
