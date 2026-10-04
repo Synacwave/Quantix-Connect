@@ -1,8 +1,8 @@
 {
-  "name": "just-quantix-connect",
+  "name": "quantix-connect",
   "private": true,
   "version": "1.0.0",
-  "description": "Just Quantix Connect — real-time messaging by Vanta Labs",
+  "description": "Quantix Connect — real-time messaging by Vanta Labs",
   "type": "module",
   "main": "index.js",
   "scripts": {
