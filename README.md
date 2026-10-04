@@ -1,6 +1,6 @@
 <div align="center">
 
-# Just Quantix Connect
+# Quantix Connect
 
 **Real-time messaging — dark theme, Socket.IO, Lucy AI companion.**
 
@@ -16,7 +16,7 @@
 
 ## Overview
 
-**Just Quantix Connect** is a full-stack, Telegram-inspired chat app with:
+**Quantix Connect** is a full-stack, Telegram-inspired chat app with:
 
 - JWT auth, bcrypt passwords, rate limiting, Helmet CSP
 - Direct chats, groups, reactions, polls, media, self-destruct messages
@@ -36,8 +36,8 @@
 ## Quick start
 
 ```bash
-git clone https://github.com/Synacwave/Just-Quantix-Connect.git
-cd Just-Quantix-Connect
+git clone https://github.com/Synacwave/Quantix-Connect.git
+cd Quantix-Connect
 npm install
 npm run dev
 ```
