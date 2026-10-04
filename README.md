@@ -21,7 +21,7 @@
 - JWT auth, bcrypt passwords, rate limiting, Helmet CSP
 - Direct chats, groups, reactions, polls, media, self-destruct messages
 - Real-time updates via **Socket.IO**
-- **Lucy** AI companion (keyless Omegatech API primary; optional Gemini via env)
+- **Lucy** AI companion
 - Admin tools, reports, blocks
 - MongoDB Atlas **or** local JSON DB fallback
 
@@ -44,23 +44,37 @@ npm run dev
 
 App runs on **http://localhost:3000**.
 
-### Environment (optional)
+### Environment (`.env`)
 
-Create `.env` at the project root:
+Copy `.env.example` to `.env` in the project root and fill in what you need. The server loads this file on startup via `dotenv`.
+
+| Variable | Required | What it does |
+|----------|----------|--------------|
+| `PORT` | No | HTTP port (default `3000`) |
+| `NODE_ENV` | No | `development` or `production` |
+| `JWT_SECRET` | Recommended | Secret used to sign login tokens |
+| `MONGODB_URI` | No | MongoDB connection string. **Leave empty** to use the built-in local JSON database |
+| `GEMINI_API_KEY` | No | Enables Gemini as a Lucy AI fallback |
+| `TELEGRAM_BOT_TOKEN` | No | Bot token for optional report notifications |
+| `TELEGRAM_CHAT_ID` | No | Chat/user ID that receives those notifications |
+| `BOOTSTRAP_ADMIN_USER` | No | Username created as admin on first matching login if the user does not exist yet |
+| `BOOTSTRAP_ADMIN_PASS` | No | Password for that bootstrap admin |
+
+Example:
 
 ```env
 PORT=3000
 NODE_ENV=development
 JWT_SECRET=change_me_to_a_long_random_string
-MONGODB_URI=               # empty = local JSON mode
-GEMINI_API_KEY=            # optional Lucy fallback
-TELEGRAM_BOT_TOKEN=        # optional report notifications
-TELEGRAM_CHAT_ID=          # optional
-BOOTSTRAP_ADMIN_USER=      # optional first admin username
-BOOTSTRAP_ADMIN_PASS=      # optional first admin password
+MONGODB_URI=
+GEMINI_API_KEY=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+BOOTSTRAP_ADMIN_USER=
+BOOTSTRAP_ADMIN_PASS=
 ```
 
-**Never commit real tokens or passwords.** Telegram and Gemini only run when env vars are set.
+Only set the optional keys when you want those features. Keep `.env` local — it is listed in `.gitignore` so it is not committed.
 
 ### Scripts
 
@@ -75,22 +89,13 @@ BOOTSTRAP_ADMIN_PASS=      # optional first admin password
 
 ## Lucy AI
 
-1. **Primary** — keyless Omegatech chat API (no API key in repo)
-2. **Fallback** — Google Gemini when `GEMINI_API_KEY` is set in the environment
-
----
-
-## Security notes
-
-- Hardcoded Telegram bot tokens and admin passwords were **removed** from source.
-- Configure secrets only via environment variables (Render / local `.env`).
-- Rotate any token that was previously committed.
+Lucy answers in chat using the primary AI provider. If `GEMINI_API_KEY` is set in `.env`, Gemini is available as a fallback.
 
 ---
 
 ## Deploy (Render)
 
-See `render.yaml`. Set `MONGODB_URI`, `JWT_SECRET`, and optional `GEMINI_API_KEY` / Telegram vars in the dashboard.
+The repo includes `render.yaml` for Render blueprints. In the Render dashboard, set the same environment variables as above (`MONGODB_URI`, `JWT_SECRET`, and any optional keys you use).
 
 ---
 
