@@ -1,3 +1,12 @@
+// ================================================================
+// PROPERTY OF VANTA LABS
+// BY EXPECTATIONS HIMSELF
+//
+// SYNACWAVE
+// +2348132803772
+// t.me/GREAT_EXPECTATIONS
+// ================================================================
+
 import React, { useState, useEffect } from "react";
 import { Search, Settings, Pin, MessageSquare, UserPlus, Circle, LogOut, Users, Send, ShieldAlert } from "lucide-react";
 import { User, Chat } from "../types";
